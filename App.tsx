@@ -84,9 +84,21 @@ function safeParseArray<T>(stored: string | null, defaultValue: T[]): T[] {
   if (!stored) return defaultValue;
   try {
     const parsed = JSON.parse(stored);
-    if (Array.isArray(parsed)) return parsed;
+    if (Array.isArray(parsed)) {
+      return parsed.map((item, idx) => {
+        if (item && typeof item === 'object') {
+          return { id: (item as any).id || `arr_idx_${idx}`, ...item };
+        }
+        return item;
+      });
+    }
     if (parsed && typeof parsed === 'object') {
-      return Object.values(parsed) as T[];
+      return Object.entries(parsed).map(([key, val]: [string, any]) => {
+        if (val && typeof val === 'object') {
+          return { id: val.id || key, ...val };
+        }
+        return val;
+      }) as T[];
     }
   } catch (e) {
     console.error("Error parsing stored array:", e);
@@ -96,9 +108,21 @@ function safeParseArray<T>(stored: string | null, defaultValue: T[]): T[] {
 
 function convertToSafeArray<T>(data: any, defaultValue: T[] = []): T[] {
   if (!data) return defaultValue;
-  if (Array.isArray(data)) return data;
+  if (Array.isArray(data)) {
+    return data.map((item, idx) => {
+      if (item && typeof item === 'object') {
+        return { id: (item as any).id || `arr_idx_${idx}`, ...item };
+      }
+      return item;
+    });
+  }
   if (typeof data === 'object') {
-    return Object.values(data) as T[];
+    return Object.entries(data).map(([key, val]: [string, any]) => {
+      if (val && typeof val === 'object') {
+        return { id: val.id || key, ...val };
+      }
+      return val;
+    }) as T[];
   }
   return defaultValue;
 }

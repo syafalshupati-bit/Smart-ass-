@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة المرجع الذكي في الفيزياء – الإصدار الكامل</title>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <style>
+        :root { --primary: #1a237e; --accent: #0288d1; --success: #2e7d32; --danger: #c62828; --warning: #ff9800; --bg: #f0f4f8; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background: var(--bg); padding: 20px; color: #333; direction: rtl; text-align: right; }
+
+        .watermark-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; overflow: hidden; }
+        .watermark-item { position: absolute; pointer-events: none; user-select: none; white-space: nowrap; color: rgba(0,0,0,0.08); text-shadow: 1px 1px 3px rgba(0,0,0,0.5); transition: all 2s; font-size: 14px; opacity: 0.08; }
+        .watermark-item .wm-name { font-size: 16px; font-weight: 700; }
+        .watermark-item .wm-info { font-size: 11px; }
+        .watermark-item .wm-time { font-size: 10px; margin-top: 3px; }
+
+        .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .login-card { background: white; width: 100%; max-width: 500px; padding: 25px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.3); text-align: center; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 16px; text-align: right; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary); font-size: 13px; }
+        .form-group input, .form-group select { width: 100%; padding: 11px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px; outline: none; text-align: right; }
+        .btn-enter { width: 100%; padding: 13px; background: var(--accent); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+        .link { background: none; border: none; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: 13px; margin-top: 12px; display: block; }
+
+        .units-container { max-height: 250px; overflow-y: auto; background: #fafafa; border-radius: 8px; padding: 8px; margin-top: 5px; }
+        .unit-group { margin-bottom: 8px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: white; }
+        .unit-header { background: var(--primary); color: white; padding: 10px 14px; cursor: pointer; font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 8px; user-select: none; }
+        .unit-header::before { content: "📁"; font-size: 16px; }
+        .unit-header.open::before { content: "📂"; }
+        .unit-lessons { display: none; padding: 8px; background: #fafafa; }
+        .unit-lessons.show { display: block; }
+        .lesson-item { display: block; padding: 10px 14px; margin: 3px 0; background: white; border-radius: 6px; cursor: pointer; border: 1px solid #e0e0e0; font-size: 13px; }
+        .lesson-item:hover { background: #e3f2fd; }
+        .lesson-item.selected { background: #c8e6c9; border-color: var(--success); font-weight: bold; }
+        .selected-lesson-display { color: var(--accent); font-weight: bold; margin-top: 8px; font-size: 13px; }
+
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 25px rgba(0,0,0,0.1); display: none; }
+        .header { text-align: center; border-bottom: 3px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 10px; background: #e0e0e0; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        details { background: #fff; border: 2px solid var(--primary); border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+        details[open] { border-color: var(--accent); background: #fafafa; }
+        summary { font-weight: bold; color: var(--primary); cursor: pointer; font-size: 15px; }
+
+        .q-group { background: #f9f9f9; padding: 14px; margin-bottom: 12px; border-radius: 8px; border-right: 5px solid var(--primary); }
+        .q-group.correct { border-right-color: var(--success); background: #e8f5e9; }
+        .q-group.wrong { border-right-color: var(--danger); background: #ffebee; }
+        .feedback-msg { display: none; margin-top: 8px; padding: 8px; border-radius: 5px; font-weight: bold; }
+        .feedback-msg.show { display: block; }
+        .btn-finish { background: var(--warning); color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .progress-container { width:100%; height:6px; background:#e0e0e0; border-radius:3px; margin:12px 0; }
+        .progress-fill { width:0%; height:100%; background:var(--success); }
+
+        .admin-panel { display: none; max-width: 1200px; margin: 0 auto; background: white; padding: 25px; border-radius: 15px; }
+        .btn { padding: 8px 18px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin: 4px; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        th { background: var(--primary); color: white; }
+        .toast { position: fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(120px); background:#333; color:white; padding:10px 22px; border-radius:25px; font-size:13px; z-index:10001; opacity:0; transition:0.4s; }
+        .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+<div class="watermark-layer" id="watermarkLayer"></div>
+<div class="toast" id="toast"></div>
+
+<!-- بوابات الدخول -->
+<div class="screen" id="mainGate">
+    <div class="login-card">
+        <h2>📚 منصة المرجع الذكي</h2>
+        <p style="color:#666; margin:15px 0">تحت إشراف الأستاذ سياف الشباطي</p>
+        <button class="btn-enter" onclick="showStudentLogin()">🎓 دخول الطالب</button>
+        <button class="btn-enter" style="background:var(--primary)" onclick="showSchoolAdminLogin()">🏫 دخول مدير المدرسة</button>
+        <button class="btn-enter" style="background:#455a64" onclick="showTeacherLogin()">👨‍🏫 دخول المعلم</button>
+        <button class="btn-enter" style="background:#333" onclick="showSuperAdminLogin()">🔑 دخول المشرف العام</button>
+    </div>
+</div>
+
+<div class="screen" id="studentLoginScreen" style="display:none">
+    <div class="login-card">
+        <h3>🎓 دخول الطالب</h3>
+        <div class="form-group"><label>📚 اختر الوحدة والدرس</label><div id="unitsContainer" class="units-container"></div><input type="hidden" id="selectedLessonId"><div id="selectedLessonDisplay" class="selected-lesson-display"></div></div>
+        <div class="form-group"><input type="text" id="studentName" placeholder="الاسم الرباعي"></div>
+        <div class="form-group"><input type="text" id="studentSchool" placeholder="المدرسة"></div>
+        <div class="form-group"><input type="text" id="studentClass" placeholder="الشعبة (اختياري)"></div>
+        <div class="form-group"><input type="text" id="studentCode" placeholder="كود التفعيل"></div>
+        <button class="btn-enter" onclick="validateStudent()">دخول</button>
+        <button class="link" onclick="goBackToGate()">🔙 العودة</button>
+    </div>
+</div>
+
+<div class="screen" id="schoolAdminLoginScreen" style="display:none">
+    <div class="login-card"><h3>🏫 دخول مدير المدرسة</h3>
+        <div class="form-group"><input type="text" id="schoolId" placeholder="رقم المدرسة"></div>
+        <div class="form-group"><input type="password" id="schoolPassword" placeholder="كلمة المرور"></div>
+        <button class="btn-enter" onclick="validateSchoolAdmin()">دخول</button>
+        <button class="link" onclick="goBackToGate()">🔙 العودة</button>
+    </div>
+</div>
+
+<div class="screen" id="teacherLoginScreen" style="display:none">
+    <div class="login-card"><h3>👨‍🏫 دخول المعلم</h3>
+        <div class="form-group"><input type="text" id="teacherId" placeholder="معرف المعلم"></div>
+        <div class="form-group"><input type="password" id="teacherPassword" placeholder="كلمة المرور"></div>
+        <button class="btn-enter" onclick="validateTeacher()">دخول</button>
+        <button class="link" onclick="goBackToGate()">🔙 العودة</button>
+    </div>
+</div>
+
+<div class="screen" id="superAdminLoginScreen" style="display:none">
+    <div class="login-card"><h3>🔑 دخول المشرف العام</h3>
+        <div class="form-group"><input type="password" id="superPassword" placeholder="كلمة المرور"></div>
+        <button class="btn-enter" onclick="validateSuperAdmin()">دخول</button>
+        <button class="link" onclick="goBackToGate()">🔙 العودة</button>
+    </div>
+</div>
+
+<!-- منصة الطالب -->
+<div class="container" id="studentPlatform">
+    <div class="header">
+        <h1>سلسلة المرجع الذكي في الفيزياء</h1>
+        <div id="activeLessonBadge" style="background:var(--warning);color:white;padding:6px 15px;border-radius:20px;"></div>
+        <div id="welcomeUser" style="background:#eceff1;padding:10px;border-radius:6px;margin:10px 0;"></div>
+        <button class="btn btn-danger" onclick="logoutStudent()">🚪 خروج</button>
+    </div>
+    <div class="tabs"><button class="tab-btn active" onclick="switchTab('map-tab')">🗺️ ملخص ومختبرات</button><button class="tab-btn" onclick="switchTab('quiz-tab')">✍️ الاختبار</button></div>
+    <div id="map-tab" class="tab-content active"><div id="mapContainer"></div></div>
+    <div id="quiz-tab" class="tab-content">
+        <div class="progress-container"><div class="progress-fill" id="progressFill"></div></div>
+        <div id="scoreDisplay" style="display:none;text-align:center;font-size:22px;font-weight:bold;"></div>
+        <div id="questionsContainer"></div>
+        <button class="btn-finish" id="btnFinish" onclick="finishQuiz()">✅ إنهاء الاختبار</button>
+        <div id="wrongAnswersSection" style="display:none;margin-top:25px;"></div>
+    </div>
+</div>
+
+<!-- لوحات التحكم -->
+<div class="admin-panel" id="superAdminPanel">
+    <div style="display:flex;justify-content:space-between;"><h2>🛡️ المشرف العام</h2><button class="btn btn-danger" onclick="logoutAdmin()">🚪 خروج</button></div>
+    <div style="background:#f5f5f5;padding:20px;border-radius:10px;margin:20px 0;"><h3>🏫 إدارة المدارس</h3><input type="text" id="newSchoolId" placeholder="رقم المدرسة"><input type="text" id="newSchoolName" placeholder="اسم المدرسة"><input type="password" id="newSchoolPassword" placeholder="كلمة مرور المدير"><button class="btn btn-primary" onclick="createSchool()">إنشاء</button><div id="schoolsTable"></div></div>
+    <div style="background:#f5f5f5;padding:20px;border-radius:10px;margin-bottom:20px;"><h3>🎫 إصدار أكواد طلاب</h3><select id="codeSchoolSelect"></select><button class="btn btn-primary" onclick="generateStudentCode()">إصدار كود</button><div id="codesTable"></div></div>
+    <div style="background:#f5f5f5;padding:20px;border-radius:10px;"><h3>📊 جميع النتائج</h3><button class="btn btn-success" onclick="exportAllCSV()">📥 CSV</button><div id="allResultsTable"></div></div>
+</div>
+
+<div class="admin-panel" id="schoolAdminPanel">
+    <div style="display:flex;justify-content:space-between;"><h2>🏫 مدير المدرسة</h2><button class="btn btn-danger" onclick="logoutAdmin()">🚪 خروج</button></div>
+    <div style="background:#f5f5f5;padding:20px;border-radius:10px;margin-bottom:20px;"><h3>👨‍🏫 إدارة المعلمين</h3><input type="text" id="newTeacherId" placeholder="معرف المعلم"><input type="text" id="newTeacherName" placeholder="اسم المعلم"><input type="password" id="newTeacherPassword" placeholder="كلمة المرور"><button class="btn btn-primary" onclick="createTeacher()">إضافة</button><div id="teachersTable"></div></div>
+    <div style="background:#f5f5f5;padding:20px;border-radius:10px;"><h3>📊 نتائج المدرسة</h3><button class="btn btn-success" onclick="printSchoolResults()">🖨️ طباعة</button><div id="schoolResultsTable"></div></div>
+</div>
+
+<div class="admin-panel" id="teacherPanel">
+    <div style="display:flex;justify-content:space-between;"><h2>👨‍🏫 المعلم</h2><button class="btn btn-danger" onclick="logoutAdmin()">🚪 خروج</button></div>
+    <div style="background:#f5f5f5;padding:20px;border-radius:10px;"><h3>📊 نتائج المدرسة</h3><button class="btn btn-success" onclick="printSchoolResults()">🖨️ طباعة</button><div id="teacherResultsTable"></div></div>
+</div>
+
+<script>
+// Firebase Config
+const firebaseConfig = {
+    apiKey: "AIzaSyCxL7HVHfQJF-qjGn8bYh1d3jyDT0mRxZ0",
+    authDomain: "smart-reference.firebaseapp.com",
+    databaseURL: "https://smart-reference-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "smart-reference",
+    storageBucket: "smart-reference.appspot.com",
+    messagingSenderId: "568386886453",
+    appId: "1:568386886453:web:3e95d2b5e6c1b8e8b6e1c2"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// دوال عامة
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._timeout);t._timeout=setTimeout(()=>t.classList.remove('show'),2500)}
+function hideAllScreens(){['mainGate','studentLoginScreen','schoolAdminLoginScreen','teacherLoginScreen','superAdminLoginScreen'].forEach(id=>document.getElementById(id).style.display='none')}
+function goBackToGate(){hideAllScreens();document.getElementById('mainGate').style.display='flex'}
+function showStudentLogin(){hideAllScreens();document.getElementById('studentLoginScreen').style.display='flex';buildUnitsFromLessons()}
+function showSchoolAdminLogin(){hideAllScreens();document.getElementById('schoolAdminLoginScreen').style.display='flex'}
+function showTeacherLogin(){hideAllScreens();document.getElementById('teacherLoginScreen').style.display='flex'}
+function showSuperAdminLogin(){hideAllScreens();document.getElementById('superAdminLoginScreen').style.display='flex'}
+
+// بناء قائمة الوحدات والدروس
+function buildUnitsFromLessons(){
+    const container=document.getElementById('unitsContainer'); if(!container)return;
+    container.innerHTML='';
+    const unitsMap={};
+    allLessons.forEach(lesson=>{
+        const u=lesson.unit||'default';
+        if(!unitsMap[u]) unitsMap[u]={title:lesson.unitTitle||'وحدة',lessons:[]};
+        unitsMap[u].lessons.push(lesson);
+    });
+    for(const[key,unit] of Object.entries(unitsMap)){
+        const unitDiv=document.createElement('div'); unitDiv.className='unit-group';
+        const header=document.createElement('div'); header.className='unit-header'; header.textContent=unit.title;
+        header.onclick=function(e){e.stopPropagation();const lDiv=this.nextElementSibling;if(lDiv){lDiv.classList.toggle('show');this.classList.toggle('open');}};
+        const lessonsDiv=document.createElement('div'); lessonsDiv.className='unit-lessons';
+        unit.lessons.forEach(lesson=>{
+            const item=document.createElement('div'); item.className='lesson-item';
+            item.innerHTML=`<span class="lesson-title">📖 ${lesson.title}</span>`;
+            item.onclick=function(e){e.stopPropagation();document.querySelectorAll('.lesson-item').forEach(el=>el.classList.remove('selected'));this.classList.add('selected');document.getElementById('selectedLessonId').value=lesson.id;document.getElementById('selectedLessonDisplay').innerText='الدرس المختار: '+lesson.title;};
+            lessonsDiv.appendChild(item);
+        });
+        unitDiv.appendChild(header); unitDiv.appendChild(lessonsDiv); container.appendChild(unitDiv);
+    }
+}
+
+// تعريف جميع الدروس كاملة
+const allLessons = [
+    // الدرس الأول
+    {
+        id:"lesson_1_intro",title:"الدرس الأول: مقدمة عن علم الفيزياء وتطور الطريقة العلمية",unit:"unit1",unitTitle:"الوحدة الأولى: أساسيات الفيزياء",order:1,
+        accordionData:[
+            {title:"📖 تعريف علم الفيزياء",content:"<ul><li><b>علم الفيزياء:</b> هو العلم الذي يهتم بدراسة الطبيعة والظواهر الطبيعية، ويسعى لتفسيرها وتوقع نتائجها.</li><li><b>الظواهر الطبيعية:</b> أحداث تحدث بفعل الطبيعة (كالبرق والرعد) وليست من صنع البشر.</li></ul>"},
+            {title:"📂 أقسام علم الفيزياء",content:"<ul><li><b>الفيزياء الكلاسيكية (قبل اكتشاف الذرة):</b> الميكانيكا، الديناميكا الحرارية، البصريات، الكهرباء، السمعيات.</li><li><b>الفيزياء الحديثة (بعد اكتشاف الذرة):</b> الفيزياء الجزيئية، الفيزياء الذرية، الفيزياء النووية.</li></ul>"},
+            {title:"💡 أهمية الفيزياء وتطبيقاتها",content:"<ul><li><b>التكنولوجيا والاتصالات:</b> الأجهزة الحديثة تعتمد على الفيزياء التطبيقية.</li><li><b>الطب:</b> لولا الفيزياء لما تقدم الطب.</li><li><b>الطاقة:</b> البحث عن مصادر مستدامة مهمة فيزيائية.</li><li><b>تفسير الطبيعة:</b> زرقة السماء، قوس المطر، دفء الشمس (الاندماج النووي).</li><li><b>الحياة اليومية:</b> المشي (الاحتكاك)، الطبخ (انتقال الحرارة).</li></ul>"},
+            {title:"🔬 كيف يفكر الفيزيائي؟ (الطريقة العلمية)",content:"<ol><li>تحديد المشكلة.</li><li>جمع المعلومات.</li><li>افتراض الفروض.</li><li>اختبار الفرض (التجريب).</li><li>الاستنتاج والتعميم.</li></ol>"},
+            {title:"👨‍🔬 شخصيات وإسهامات",content:"<ul><li><b>ألبرت أينشتاين:</b> نظرية النسبية، نوبل 1921.</li><li><b>الحسن بن الهيثم:</b> مؤسس البصريات، المنهج التجريبي.</li><li><b>البتاني:</b> فلكي رصد النجوم والكواكب.</li><li><b>محمد عبد السلام:</b> نوبل 1979، وحد القوى الأساسية.</li><li><b>إسحاق نيوتن:</b> قوانين الحركة والجاذبية.</li></ul>"},
+            {title:"🌐 علاقة الفيزياء بالعلوم الأخرى",content:"<ul><li><b>الكيمياء:</b> التركيب الذري. <b>الأحياء:</b> طاقة الغذاء. <b>الجيولوجيا:</b> الزلازل. <b>الفلك:</b> حركة الكواكب. <b>الرياضيات:</b> لغة القوانين.</li></ul>"}
+        ],
+        islamicReflections:[
+            "📖 قال الله تعالى: ﴿إِنَّ فِي خَلْقِ السَّمَاوَاتِ وَالْأَرْضِ وَاخْتِلَافِ اللَّيْلِ وَالنَّهَارِ لَآيَاتٍ لِّأُولِي الْأَلْبَابِ﴾ (آل عمران: 190)",
+            "🌌 التأمل في الكون: علم الفيزياء هو وسيلتك لاكتشاف عظمة الخالق في أدق تفاصيل الطبيعة.",
+            "🔬 قال رسول الله ﷺ: «من سلك طريقًا يلتمس فيه علمًا، سهل الله له به طريقًا إلى الجنة» (رواه مسلم)."
+        ],
+        questions:[
+            {id:"q1_1",text:"الفيزياء هي علم يدرس المادة والطاقة والعلاقة بينهما.",type:"tf",correct:"true",explain:"✅ هذا تعريف علم الفيزياء الأساسي."},
+            {id:"q1_2",text:"تعتمد الفيزياء على التخمين أكثر من التجربة.",type:"tf",correct:"false",explain:"❌ العكس صحيح! الفيزياء تعتمد على التجربة والملاحظة العلمية."},
+            {id:"q1_3",text:"الهدف من الفرضية في الطريقة العلمية هو تقديم تفسير قابل للاختبار.",type:"tf",correct:"true",explain:"✅ الفرضية تفسير مؤقت قابل للاختبار."},
+            {id:"q1_4",text:"نظرية النسبية من إسهامات العالم إسحاق نيوتن.",type:"tf",correct:"false",explain:"❌ النسبية من إسهامات ألبرت أينشتاين."},
+            {id:"q1_5",text:"البصريات هي فرع يدرس الضوء وخصائصه.",type:"tf",correct:"true",explain:"✅ البصريات علم دراسة الضوء."},
+            {id:"q1_6",text:"تعتبر الفيزياء الأساس لكثير من التطورات التكنولوجية مثل الهواتف.",type:"tf",correct:"true",explain:"✅ التكنولوجيا مبنية على الفيزياء."},
+            {id:"q1_7",text:"قانون حفظ الطاقة ينص على أن الطاقة تفنى ولكن يمكن تحويلها.",type:"tf",correct:"false",explain:"❌ الطاقة لا تفنى ولا تستحدث."},
+            {id:"q1_8",text:"أول خطوة في الطريقة العلمية هي وضع الفرضية.",type:"tf",correct:"false",explain:"❌ أول خطوة هي تحديد المشكلة."},
+            {id:"q1_9",text:"تدرس الفيزياء الكلاسيكية الأجسام كبيرة الحجم والسرعات العادية.",type:"tf",correct:"true",explain:"✅ هذا تعريف الفيزياء الكلاسيكية."},
+            {id:"q1_10",text:"ألبرت أينشتاين هو عالم مرتبط بالفيزياء الكلاسيكية فقط.",type:"tf",correct:"false",explain:"❌ أينشتاين مؤسس الفيزياء الحديثة."},
+            {id:"q1_11",text:"أي مما يلي يعتبر فرعاً من فروع الفيزياء الكلاسيكية (القديمة)؟",type:"mc",options:["أ) ميكانيكا الكم","ب) النسبية العامة","ج) الديناميكا الحرارية"],correct:"ج) الديناميكا الحرارية",explain:"✅ الديناميكا الحرارية من الفيزياء الكلاسيكية."},
+            {id:"q1_12",text:"أي من هذه الخطوات تأتي بعد الفرضية مباشرة في الطريقة العلمية؟",type:"mc",options:["أ) الملاحظة","ب) التحليل الإحصائي","ج) التجربة"],correct:"ج) التجربة",explain:"✅ بعد الفرضية نأتي بالتجربة."},
+            {id:"q1_13",text:"أي عالم ارتبط اسمه بشكل رئيسي بنظرية النسبية؟",type:"mc",options:["أ) إسحاق نيوتن","ب) جيمس كليرك ماكسويل","ج) ألبرت أينشتاين"],correct:"ج) ألبرت أينشتاين",explain:"✅ أينشتاين صاحب نظرية النسبية."},
+            {id:"q1_14",text:"أي من هذه المجالات يهتم بدراسة انتقال الحرارة وتحولات الطاقة؟",type:"mc",options:["أ) البصريات","ب) الديناميكا الحرارية","ج) الميكانيكا فقط"],correct:"ب) الديناميكا الحرارية",explain:"✅ الديناميكا الحرارية تدرس الحرارة."},
+            {id:"q1_15",text:"ما هو الهدف الأساسي من دراسة الفيزياء؟",type:"mc",options:["أ) حفظ المعادلات","ب) وضع قوانين تفسر الظواهر الطبيعية","ج) التركيز على الكيمياء فقط"],correct:"ب) وضع قوانين تفسر الظواهر الطبيعية",explain:"✅ الهدف تفسير الظواهر."},
+            {id:"q1_16",text:"أي مما يلي هو فرع من فروع الفيزياء الحديثة؟",type:"mc",options:["أ) الصوتيات","ب) ميكانيكا الموائع","ج) الفيزياء الذرية"],correct:"ج) الفيزياء الذرية",explain:"✅ الفيزياء الذرية من الحديثة."},
+            {id:"q1_17",text:"في أي قرن ظهرت الفيزياء الحديثة تقريباً؟",type:"mc",options:["أ) القرن السابع عشر","ب) القرن الثامن عشر","ج) القرن العشرين"],correct:"ج) القرن العشرين",explain:"✅ ظهرت في القرن العشرين."},
+            {id:"q1_18",text:"أي عالم ارتبط بقوانين الحركة والجاذبية الأرضية؟",type:"mc",options:["أ) أينشتاين","ب) نيوتن","ج) البتاني"],correct:"ب) نيوتن",explain:"✅ نيوتن وضع قوانين الحركة."},
+            {id:"q1_19",text:"أحد علماء المسلمين الذي اهتم بدراسة الضوء هو:",type:"mc",options:["أ) ابن الهيثم","ب) ابن سينا","ج) ماكسويل"],correct:"أ) ابن الهيثم",explain:"✅ ابن الهيثم مؤسس البصريات."},
+            {id:"q1_20",text:"العالم الذي وحد القوى الكهرومغناطيسية والنووية الضعيفة هو:",type:"mc",options:["أ) البتاني","ب) محمد عبد السلام","ج) ابن الهيثم"],correct:"ب) محمد عبد السلام",explain:"✅ محمد عبد السلام حصل على نوبل."}
+        ]
+    },
+    // الدرس الثاني
+    {
+        id:"lesson_2_measurement",title:"الدرس الثاني: القياس وأنظمته وأدواته المعيارية",unit:"unit1",unitTitle:"الوحدة الأولى: أساسيات الفيزياء",order:2,
+        accordionData:[
+            {title:"📏 ما هو القياس؟",content:"<ul><li><b>القياس:</b> أسلوب لمقارنة كمية مجهولة بكمية معيارية لمعرفة عدد مرات احتواء الأولى على الثانية.</li><li><b>لماذا نقيس؟</b> لتقنين الكميات وتحويل الملاحظات لأرقام.</li></ul>"},
+            {title:"📜 أنظمة القياس",content:"<ul><li><b>الأنظمة القديمة:</b> الشبر، الذراع، وتختلف من منطقة لأخرى.</li><li><b>الأنظمة الحديثة:</b> الإنجليزي، الفرنسي، والعالمي (م. كجم. ث).</li></ul>"},
+            {title:"📐 تعريفات الوحدات الأساسية",content:"<ul><li><b>المتر (m):</b> مسافة الضوء في الفراغ خلال 1/299792458 ث.</li><li><b>الكيلوجرام (kg):</b> أسطوانة بلاتين-إيريديوم في باريس.</li><li><b>الثانية (sec):</b> إشعاع ذرة السيزيوم 133.</li></ul>"},
+            {title:"🛠️ أدوات القياس الحديثة",content:"<ul><li><b>الطول:</b> شريط متري، ورنية، ميكرومتر.</li><li><b>الكتلة:</b> ميزان كفتين، ميزان إلكتروني.</li><li><b>الزمن:</b> ساعة ذرية، ساعة إيقاف.</li></ul>"},
+            {title:"🧪 مختبر القياس التفاعلي",content:`
+                <div style="text-align:center; background: linear-gradient(135deg, #1a237e, #0288d1); color: white; padding: 12px; border-radius: 10px; margin-bottom: 20px;">📏 سلسلة المرجع الذكي في الفيزياء - أ/ سياف الشباطي</div>
+                <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:20px;">
+                    <div style="flex:1; min-width:200px; background:#e3f2fd; padding:15px; border-radius:10px;"><h4 style="color:#0d47a1;">📦 الأجسام</h4>
+                        <div class="object-card" data-obj="1" onclick="selectMeasObj(1, this)" style="background:white; padding:10px; margin:5px 0; border-radius:6px; cursor:pointer; border:2px solid #ccc;">50 مم</div>
+                        <div class="object-card" data-obj="2" onclick="selectMeasObj(2, this)" style="background:white; padding:10px; margin:5px 0; border-radius:6px; cursor:pointer; border:2px solid #ccc;">20 مم</div>
+                        <div class="object-card" data-obj="3" onclick="selectMeasObj(3, this)" style="background:white; padding:10px; margin:5px 0; border-radius:6px; cursor:pointer; border:2px solid #ccc;">12.5 مم</div>
+                    </div>
+                    <div style="flex:1; min-width:200px; background:#fff3e0; padding:15px; border-radius:10px;"><h4 style="color:#e65100;">🛠️ الأدوات</h4>
+                        <button onclick="selectMeasTool('ruler')" style="display:block; width:100%; margin:5px 0; padding:10px; border:2px solid #1565c0; background:white; border-radius:8px; cursor:pointer;">📏 المسطرة</button>
+                        <button onclick="selectMeasTool('caliper')" style="display:block; width:100%; margin:5px 0; padding:10px; border:2px solid #1565c0; background:white; border-radius:8px; cursor:pointer;">📐 القدمة الورنية</button>
+                        <button onclick="selectMeasTool('micrometer')" style="display:block; width:100%; margin:5px 0; padding:10px; border:2px solid #1565c0; background:white; border-radius:8px; cursor:pointer;">🔩 الميكرومتر</button>
+                    </div>
+                </div>
+                <div id="measurementToolDisplay" style="background:#fafafa; border:1px solid #ccc; border-radius:8px; padding:15px; min-height:200px; text-align:center; color:#888;">اختر أداة وجسماً لعرض القياس</div>
+                <table style="width:100%; margin-top:10px;" id="measurementTable"><thead><tr style="background:#2e7d32; color:white;"><th>الأداة</th><th>الجسم</th><th>القيمة المقاسة</th><th>القيمة الحقيقية</th><th>الحالة</th></tr></thead><tbody id="measurementTableBody"><tr><td colspan="5">لا قياسات بعد</td></tr></tbody></table>
+                <button onclick="saveMeasRecord()" style="margin-top:10px; background:#2e7d32; color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">📝 تسجيل القياس</button>
+            `}
+        ],
+        islamicReflections:[
+            "📏 قال الله تعالى: ﴿وَكُلُّ شَيْءٍ عِندَهُ بِمِقْدَارٍ﴾ (الرعد: 8)",
+            "⚖️ قال رسول الله ﷺ: «إن الله يحب إذا عمل أحدكم عملاً أن يتقنه» (رواه البيهقي).",
+            "📐 ﴿وَأَقِيمُوا الْوَزْنَ بِالْقِسْطِ وَلَا تُخْسِرُوا الْمِيزَانَ﴾ (الرحمن: 9)"
+        ],
+        questions:[
+            {id:"q2_1",text:"كانت وحدات القياس القديمة موحدة في جميع أنحاء العالم.",type:"tf",correct:"false",explain:"❌ كانت تختلف من منطقة لأخرى."},
+            {id:"q2_2",text:"يعتمد تعريف المتر الحديث على سرعة الضوء في الفراغ.",type:"tf",correct:"true",explain:"✅."},
+            {id:"q2_3",text:"كان الكيلوجرام المعياري القديم أسطوانة من البلاتين والإيريديوم.",type:"tf",correct:"true",explain:"✅."},
+            {id:"q2_4",text:"كانت الوحدات القديمة دقيقة جداً لاعتمادها على مقاييس بشرية.",type:"tf",correct:"false",explain:"❌."},
+            {id:"q2_5",text:"من عيوب الأنظمة القديمة سهولة تحويل الوحدات.",type:"tf",correct:"false",explain:"❌."},
+            {id:"q2_6",text:"أي مما يلي يعد من وحدات القياس الأساسية في النظام الدولي؟",type:"mc",options:["أ) نيوتن","ب) الكلفن","ج) لتر"],correct:"ب) الكلفن",explain:"✅."},
+            {id:"q2_7",text:"المشكلة الرئيسية في أنظمة القياس القديمة هي:",type:"mc",options:["أ) اعتمادها على الظواهر الطبيعية","ب) دقتها العالية","ج) عدم توحيدها"],correct:"ج) عدم توحيدها",explain:"✅."},
+            {id:"q2_8",text:"سبب تحول العالم للنظام الدولي للوحدات هو:",type:"mc",options:["أ) قدمه وتاريخه","ب) الدقة والاتساق العالمي","ج) فرضه من الأمم المتحدة"],correct:"ب) الدقة والاتساق العالمي",explain:"✅."},
+            {id:"q2_9",text:"جهاز قياس الطول حديثاً هو:",type:"mc",options:["أ) الشريط المتري","ب) ساعة الإيقاف","ج) الميزان الإلكتروني"],correct:"أ) الشريط المتري",explain:"✅."},
+            {id:"q2_10",text:"اللبنة كمساحة قياس يمنية قديمة تساوي تقريباً:",type:"mc",options:["أ) 4 م²","ب) 23.2 م²","ج) 44.44 م²"],correct:"ج) 44.44 م²",explain:"✅."}
+        ]
+    },
+    // الدرس الثالث
+    {
+        id:"lesson_3_quantities",title:"الدرس الثالث: الكميات الفيزيائية",unit:"unit1",unitTitle:"الوحدة الأولى: أساسيات الفيزياء",order:3,
+        accordionData:[
+            {title:"📐 تعريف الكمية الفيزيائية",content:"<ul><li><b>الكمية الفيزيائية:</b> خاصية قابلة للقياس تُوصف بها الظواهر أو الأجسام، ويُعبر عنها رقمياً (عدد + وحدة قياس).</li><li><b>أمثلة:</b> الطول، الكتلة، الزمن، السرعة، القوة.</li><li><b>غير كميات فيزيائية:</b> المشاعر، الذكاء (لا يمكن قياسها بوحدة معيارية).</li></ul>"},
+            {title:"📏 الكميات الأساسية",content:"<ul><li><b>تعريفها:</b> كميات تُعرف بذاتها ولا تحتاج لغيرها.</li><li><b>الكميات الأساسية في SI:</b> الطول (m)، الكتلة (kg)، الزمن (s)، شدة التيار الكهربائي (A)، درجة الحرارة (K)، شدة الاستضاءة (cd)، كمية المادة (mol).</li></ul>"},
+            {title:"📊 الكميات المشتقة",content:"<ul><li><b>تعريفها:</b> كميات تُعرف بدلالة الكميات الأساسية.</li><li><b>أمثلة:</b> المساحة (m²)، الحجم (m³)، الكثافة (kg/m³)، السرعة (m/s)، القوة (N = kg·m/s²)، الضغط (Pa)، الشغل (J).</li></ul>"},
+            {title:"⚖️ الكميات القياسية والمتجهة",content:"<ul><li><b>الكمية القياسية:</b> يلزم لمعرفتها <b>المقدار فقط</b>. مثل: الكتلة، الزمن، المسافة، الطاقة، الشغل، درجة الحرارة.</li><li><b>الكمية المتجهة:</b> يلزم لمعرفتها <b>المقدار والاتجاه</b> معاً. مثل: الإزاحة، السرعة، القوة، العجلة، الوزن، شدة المجال الكهربائي.</li></ul>"},
+            {title:"🧭 تمثيل المتجهات",content:"<ul><li>تُمثل <b>بسهم</b>: طوله يمثل المقدار، واتجاهه يمثل اتجاه الكمية.</li><li>جبرياً: يُكتب بحرف يعلوه سهم (مثلاً: <b>→F</b>).</li><li><b>ملاحظة:</b> ضرب كمية قياسية × كمية متجهة = كمية متجهة. قسمة متجه ÷ قياسي = متجه.</li></ul>"},
+            {title:"🧪 مختبر تصنيف الكميات (قياسية أم متجهة؟)",content:`
+                <div style="text-align:center; background: linear-gradient(135deg, #1a237e, #0288d1); color: white; padding: 12px; border-radius: 10px; margin-bottom: 20px;">📏 سلسلة المرجع الذكي في الفيزياء - أ/ سياف الشباطي</div>
+                <div style="background: #fff3e0; border-right: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><h4 style="color: #e65100;">📋 تعليمات المختبر:</h4><p>اسحب كل كمية فيزيائية إلى الصندوق الصحيح (قياسية أو متجهة). لديك <b>30 ثانية</b> للإجابة على 10 كميات.</p><p>كل إجابة صحيحة = <b>نقطة واحدة</b>. الهدف: <b>10/10</b></p></div>
+                <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                    <div id="scalarBox" style="flex: 1; min-width: 150px; background: #e8f5e9; border: 3px dashed #2e7d32; border-radius: 12px; padding: 20px; text-align: center; min-height: 200px;" ondragover="event.preventDefault()" ondrop="dropQuantity(event,'scalar')"><h4 style="color: #2e7d32;">📏 قياسية</h4><div id="scalarItems"></div></div>
+                    <div id="vectorBox" style="flex: 1; min-width: 150px; background: #fce4ec; border: 3px dashed #c62828; border-radius: 12px; padding: 20px; text-align: center; min-height: 200px;" ondragover="event.preventDefault()" ondrop="dropQuantity(event,'vector')"><h4 style="color: #c62828;">🧭 متجهة</h4><div id="vectorItems"></div></div>
+                </div>
+                <div style="text-align: center; margin-bottom: 15px;"><div id="quantityCard" style="background: #fff; border: 2px solid #1a237e; border-radius: 12px; padding: 15px 30px; display: inline-block; font-size: 20px; font-weight: bold; cursor: grab;" draggable="true" ondragstart="dragQuantity(event)">اسحبني إلى الصندوق الصحيح</div></div>
+                <div style="text-align: center; margin-bottom: 15px;"><div id="timerDisplay" style="font-size: 24px; color: #d9534f; font-weight: bold;">الوقت: 30 ثانية</div><div id="scoreDisplay" style="font-size: 20px; font-weight: bold; margin-top: 10px;">النتيجة: 0 / 0</div></div>
+                <div style="text-align: center;"><button onclick="startQuantityGame()" style="background: #0288d1; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">▶️ بدء التحدي</button> <button onclick="resetQuantityGame()" style="background: #757575; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold; cursor: pointer;">🔄 إعادة</button></div>
+            `}
+        ],
+        islamicReflections:[
+            "🔢 قال الله تعالى: ﴿وَأَحْصَى كُلَّ شَيْءٍ عَدَدًا﴾ (الجن: 28)",
+            "📊 الكميات الفيزيائية تذكرنا بأن الله قد أحصى كل شيء في الكون بعدد ومقدار.",
+            "🧭 المتجهات تدل على الاتجاه، والمؤمن له وجهة واحدة هي الله: ﴿فَأَيْنَمَا تُوَلُّوا فَثَمَّ وَجْهُ اللَّهِ﴾ (البقرة: 115)"
+        ],
+        questions:[
+            {id:"q3_1",text:"الزمن كمية متجهة.",type:"tf",correct:"false",explain:"❌ الزمن كمية قياسية."},
+            {id:"q3_2",text:"شدة التيار الكهربائي كمية فيزيائية مشتقة.",type:"tf",correct:"false",explain:"❌ أساسية."},
+            {id:"q3_3",text:"جميع الكميات الفيزيائية إما قياسية أو متجهة.",type:"tf",correct:"true",explain:"✅."},
+            {id:"q3_4",text:"يمكن جمع كمية قياسية مع كمية متجهة.",type:"tf",correct:"false",explain:"❌."},
+            {id:"q3_5",text:"الطاقة كمية متجهة.",type:"tf",correct:"false",explain:"❌ قياسية."},
+            {id:"q3_6",text:"الضغط كمية متجهة.",type:"tf",correct:"false",explain:"❌ قياسية."},
+            {id:"q3_7",text:"شدة المجال الكهربائي كمية متجهة.",type:"tf",correct:"true",explain:"✅."},
+            {id:"q3_8",text:"شدة الاستضاءة كمية قياسية.",type:"tf",correct:"true",explain:"✅."},
+            {id:"q3_9",text:"كمية التحرك كمية قياسية.",type:"tf",correct:"false",explain:"❌ متجهة."},
+            {id:"q3_10",text:"عند شراء كمية من الفواكه يلزم تحديد الاتجاه.",type:"tf",correct:"false",explain:"❌."},
+            {id:"q3_11",text:"الكمية التي تحتاج إلى تحديد اتجاهها لتكون وصفها كاملاً تسمى:",type:"mc",options:["أ) قياسية","ب) متجهة","ج) عديمة الاتجاه"],correct:"ب) متجهة",explain:"✅."},
+            {id:"q3_12",text:"أي مما يلي يعتبر كمية قياسية؟",type:"mc",options:["أ) السرعة","ب) القوة","ج) الزمن"],correct:"ج) الزمن",explain:"✅."},
+            {id:"q3_13",text:"وحدة قياس الكتلة في النظام الدولي هي:",type:"mc",options:["أ) المتر","ب) الكيلوجرام","ج) الثانية"],correct:"ب) الكيلوجرام",explain:"✅."},
+            {id:"q3_14",text:"الكمية الفيزيائية التي تمتلك مقداراً واتجاهاً تسمى:",type:"mc",options:["أ) أساسية","ب) مشتقة","ج) متجهة"],correct:"ج) متجهة",explain:"✅."},
+            {id:"q3_15",text:"أي من الكميات التالية متجهة؟",type:"mc",options:["أ) درجة الحرارة","ب) القوة","ج) الزمن"],correct:"ب) القوة",explain:"✅."},
+            {id:"q3_16",text:"لتمثيل كمية متجهة نستخدم:",type:"mc",options:["أ) عدداً فقط","ب) نقطة","ج) سهماً"],correct:"ج) سهماً",explain:"✅."},
+            {id:"q3_17",text:"الكمية الفيزيائية الناتجة من قسمة متجه الإزاحة على الزمن هي:",type:"mc",options:["أ) السرعة","ب) المسافة","ج) التسارع"],correct:"أ) السرعة",explain:"✅."},
+            {id:"q3_18",text:"أي من الكميات التالية قياسية؟",type:"mc",options:["أ) العجلة","ب) الطاقة","ج) السرعة"],correct:"ب) الطاقة",explain:"✅."},
+            {id:"q3_19",text:"أي من الكميات التالية متجهة في جميع الحالات؟",type:"mc",options:["أ) الكتلة","ب) الإزاحة","ج) الحجم"],correct:"ب) الإزاحة",explain:"✅."},
+            {id:"q3_20",text:"لضرب كمية قياسية في كمية متجهة، الناتج هو:",type:"mc",options:["أ) قياسية","ب) متجهة","ج) لا يمكن"],correct:"ب) متجهة",explain:"✅."}
+        ]
+    },
+// الدرس الرابع: التحويلات الفيزيائية (25 سؤال + جدول تحويلات)
+{
+    id: "lesson_4_conversions",
+    title: "الدرس الرابع: التحويلات الفيزيائية",
+    unit: "unit1",
+    unitTitle: "الوحدة الأولى: أساسيات الفيزياء",
+    type: "accordion",
+    order: 4,
+    accordionData: [
+        { title: "🎯 أهداف التحويلات الفيزيائية", content: "<ul><li><b>لماذا نستخدم التحويلات؟</b> للتغلب على مشكلة الأعداد الكبيرة جداً أو الصغيرة جداً.</li><li><b>الأهداف:</b> تسهيل الفهم والقراءة، ومنع الأخطاء في عد الأصفار.</li></ul>" },
+        { title: "🏷️ البادئات (المضاعفات والأجزاء)", content: "<ul><li><b>تعريفها:</b> كلمات تُضاف قبل الوحدة لتعني رقماً معيناً.</li><li><b>مضاعفات:</b> كيلو (1000)، ميجا (1000000)، جيجا (1000000000).</li><li><b>أجزاء:</b> ملي (0.001)، ميكرو (0.000001)، نانو (0.000000001).</li></ul>" },
+        { title: "🔢 الصيغة الأسية (العلمية)", content: "<ul><li><b>تكتب بالصورة:</b> س × ١٠<sup>ن</sup></li><li><b>س:</b> معامل بين 1 و10.</li><li><b>ن:</b> عدد الخانات التي تحركت فيها الفاصلة.</li><li><b>مثال:</b> سرعة الضوء = 3 × 10⁸ م/ث.</li></ul>" },
+        { title: "⚖️ قواعد التحويل الأساسية", content: "<ul><li><b>من كبير إلى صغير:</b> نضرب في معامل التحويل.</li><li><b>من صغير إلى كبير:</b> نقسم على معامل التحويل (أو نضرب في أس سالب).</li></ul>" },
+        { title: "📏 وحدات الطول والزمن والكتلة", content: "<ul><li><b>الطول:</b> 1 كم = 1000 م، 1 م = 100 سم، 1 سم = 10 مم، 1 ميكرومتر = 0.001 مم.</li><li><b>الزمن:</b> 1 ساعة = 60 دقيقة = 3600 ثانية.</li><li><b>الكتلة:</b> 1 طن = 1000 كجم، 1 كجم = 1000 جم.</li></ul>" },
+        {
+            title: "📊 جدول التحويلات التفاعلي (املأ الفراغات)",
+            content: '<div style="background: #e3f2fd; border: 2px solid #1565c0; border-radius: 12px; padding: 20px; margin: 20px 0;"><h4 style="color: #0d47a1; margin-bottom: 15px; text-align: center;">🔢 تدريب عملي على التحويلات الأساسية</h4><table style="width: 100%; border-collapse: collapse; margin: 0 auto; background: #fff; font-size: 14px;"><thead><tr><th>من</th><th>إلى</th><th>العملية</th><th>المعامل</th></tr></thead><tbody><tr><td>كيلومتر</td><td>متر</td><td><select id="conv1_op"><option value="">--</option><option value="×">×</option><option value="÷">÷</option></select></td><td><input type="number" id="conv1_val" placeholder="؟"><span id="feed_conv1"></span></td></tr><tr><td>متر</td><td>سنتيمتر</td><td><select id="conv2_op"><option value="">--</option><option value="×">×</option><option value="÷">÷</option></select></td><td><input type="number" id="conv2_val" placeholder="؟"><span id="feed_conv2"></span></td></tr><tr><td>ساعة</td><td>دقيقة</td><td><select id="conv3_op"><option value="">--</option><option value="×">×</option><option value="÷">÷</option></select></td><td><input type="number" id="conv3_val" placeholder="؟"><span id="feed_conv3"></span></td></tr><tr><td>كيلوجرام</td><td>جرام</td><td><select id="conv4_op"><option value="">--</option><option value="×">×</option><option value="÷">÷</option></select></td><td><input type="number" id="conv4_val" placeholder="؟"><span id="feed_conv4"></span></td></tr><tr><td>طن</td><td>كيلوجرام</td><td><select id="conv5_op"><option value="">--</option><option value="×">×</option><option value="÷">÷</option></select></td><td><input type="number" id="conv5_val" placeholder="؟"><span id="feed_conv5"></span></td></tr><tr><td>مليمتر</td><td>متر</td><td><select id="conv6_op"><option value="">--</option><option value="×">×</option><option value="÷">÷</option></select></td><td><input type="number" id="conv6_val" placeholder="؟"><span id="feed_conv6"></span></td></tr></tbody></table><div style="text-align: center; margin-top: 15px;"><button onclick="checkAllConversions()" style="background: #ff9800; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold;">✅ تحقق من جميع الإجابات</button><button onclick="resetConversions()" style="background: #757575; color: white; border: none; padding: 10px 25px; border-radius: 8px; font-weight: bold; margin-right: 10px;">🔄 إعادة تعيين</button></div><div id="convScoreDisplay" style="text-align: center; margin-top: 15px; font-size: 20px; font-weight: bold;"></div></div>'
+        }
+    ],
+    islamicReflections: [
+        "🔄 قال الله تعالى: ﴿وَأَنزَلْنَا مِنَ السَّمَاءِ مَاءً بِقَدَرٍ فَأَسْكَنَّاهُ فِي الْأَرْضِ﴾ (المؤمنون: 18)",
+        "📏 التحويل بين الوحدات يعلمنا النظام والدقة، وهما من صفات المؤمن.",
+        "⚖️ ﴿وَالسَّمَاءَ رَفَعَهَا وَوَضَعَ الْمِيزَانَ﴾ (الرحمن: 7)"
+    ],
+    questions: [
+        { id: "q4_1", text: "التحويل من الكيلومتر إلى المتر يتم بالقسمة على 1000.", type: "tf", correct: "false", explain: "❌ خطأ. كيلومتر = 1000 متر، للتحويل من كبير (كم) إلى صغير (م) نضرب ×1000." },
+        { id: "q4_2", text: "للتحويل من السنتيمتر إلى المتر نضرب في 100.", type: "tf", correct: "false", explain: "❌ خطأ. 1 متر = 100 سم، للتحويل من صغير (سم) إلى كبير (م) نقسم على 100." },
+        { id: "q4_3", text: "1 طن يساوي 1000 كيلوجرام.", type: "tf", correct: "true", explain: "✅ صحيح. الطن الواحد = 1000 كجم." },
+        { id: "q4_4", text: "الميكرومتر أصغر من المليمتر.", type: "tf", correct: "true", explain: "✅ صحيح. 1 مم = 1000 ميكرومتر، فالميكرومتر أصغر." },
+        { id: "q4_5", text: "التحويل من الجرام إلى الكيلوجرام يتم بالقسمة على 1000.", type: "tf", correct: "true", explain: "✅ صحيح. 1 كجم = 1000 جم، للتحويل من صغير (جم) إلى كبير (كجم) نقسم." },
+        { id: "q4_6", text: "وحدة قياس الزمن الأساسية في النظام الدولي هي الدقيقة.", type: "tf", correct: "false", explain: "❌ خطأ. الوحدة الأساسية للزمن في SI هي الثانية." },
+        { id: "q4_7", text: "التحويل من متر إلى سنتيمتر يتم بالقسمة على 1000.", type: "tf", correct: "false", explain: "❌ خطأ. 1 م = 100 سم، للتحويل من كبير (م) إلى صغير (سم) نضرب ×100 (وليس القسمة)." },
+        { id: "q4_8", text: "الساعة = 60 ثانية.", type: "tf", correct: "false", explain: "❌ خطأ. الساعة = 60 دقيقة = 3600 ثانية." },
+        { id: "q4_9", text: "4000 كجم = 5 طن.", type: "tf", correct: "false", explain: "❌ خطأ. 1 طن = 1000 كجم، إذن 4000 كجم = 4 طن." },
+        { id: "q4_10", text: "30 دقيقة = نصف ساعة.", type: "tf", correct: "true", explain: "✅ صحيح. نصف الساعة = 30 دقيقة." },
+        { id: "q4_11", text: "للتحويل من 5 كم إلى متر نضرب في:", type: "mc", options: ["1000", "100", "10", "1"], correct: "1000", explain: "✅ نضرب ×1000 لأن الكيلو = 1000 وحدة. 5 كم = 5000 م." },
+        { id: "q4_12", text: "1 مليمتر يساوي:", type: "mc", options: ["0.1 سم", "0.001 سم", "0.0001 سم", "10 سم"], correct: "0.1 سم", explain: "✅ 1 سم = 10 مم، إذن 1 مم = 0.1 سم." },
+        { id: "q4_13", text: "للتحويل من الساعات إلى الثواني نضرب في:", type: "mc", options: ["60", "3600", "1000", "360"], correct: "3600", explain: "✅ 1 ساعة = 60 دقيقة × 60 ثانية = 3600 ثانية." },
+        { id: "q4_14", text: "للتحويل من الأمبير إلى الملي أمبير نضرب في:", type: "mc", options: ["10", "100", "1000"], correct: "1000", explain: "✅ الملي يعني جزء من ألف (0.001)، إذن 1 أمبير = 1000 ملي أمبير. نضرب ×1000." },
+        { id: "q4_15", text: "المتر الواحد يساوي تقريباً:", type: "mc", options: ["10 أقدام", "3 أقدام"], correct: "3 أقدام", explain: "✅ 1 متر ≈ 3.28 قدم، أي تقريباً 3 أقدام." },
+        { id: "q4_16", text: "الملي يعني:", type: "mc", options: ["ألف", "جزء من ألف"], correct: "جزء من ألف", explain: "✅ الملي = 0.001 = 1/1000 (جزء من ألف)." },
+        { id: "q4_17", text: "2.5 سم تساوي بالمليمتر:", type: "mc", options: ["2500", "250", "25", "0.25"], correct: "25", explain: "✅ 1 سم = 10 مم، 2.5 × 10 = 25 مم." },
+        { id: "q4_18", text: "حول 3 ساعات إلى دقائق. الناتج هو:", type: "mc", options: ["180 دقيقة", "300 دقيقة", "360 دقيقة"], correct: "180 دقيقة", explain: "✅ 3 × 60 = 180 دقيقة." },
+        { id: "q4_19", text: "30 دقيقة تساوي بالثواني:", type: "mc", options: ["180 ث", "1800 ث", "3600 ث"], correct: "1800 ث", explain: "✅ 30 × 60 = 1800 ثانية." },
+        { id: "q4_20", text: "2 ساعة تساوي بالدقائق:", type: "mc", options: ["60 دقيقة", "120 دقيقة", "360 دقيقة"], correct: "120 دقيقة", explain: "✅ 2 × 60 = 120 دقيقة." },
+        { id: "q4_21", text: "7200 ثانية تساوي بالساعات:", type: "mc", options: ["1 ساعة", "2 ساعة", "3 ساعة"], correct: "2 ساعة", explain: "✅ 7200 ÷ 3600 = 2 ساعة." },
+        { id: "q4_22", text: "حول 3 طن إلى كجم. الناتج هو:", type: "mc", options: ["30 كجم", "300 كجم", "3000 كجم"], correct: "3000 كجم", explain: "✅ 3 × 1000 = 3000 كجم." },
+        { id: "q4_23", text: "حول 30 طن إلى كجم. الناتج هو:", type: "mc", options: ["300 كجم", "3000 كجم", "30000 كجم"], correct: "30000 كجم", explain: "✅ 30 × 1000 = 30000 كجم." },
+        { id: "q4_24", text: "أكمل: 2 طن = ............ كجم", type: "mc", options: ["20 كجم", "200 كجم", "2000 كجم"], correct: "2000 كجم", explain: "✅ 2 × 1000 = 2000 كجم." },
+        { id: "q4_25", text: "أكمل: ............ طن = 5000 كجم", type: "mc", options: ["0.5 طن", "5 طن", "50 طن"], correct: "5 طن", explain: "✅ 5000 ÷ 1000 = 5 طن." }
+    ]
+},
+// الدرس الخامس: التحليل البعدي (20 سؤال + مختبر)
+{
+    id: "lesson_5_dimensional",
+    title: "الدرس الخامس: التأكد من صحة العلاقات الفيزيائية (التحليل البعدي)",
+    unit: "unit1",
+    unitTitle: "الوحدة الأولى: أساسيات الفيزياء",
+    type: "accordion",
+    order: 5,
+    accordionData: [
+        { title: "🔬 ما هو التحليل البعدي؟", content: "<ul><li><b>التعريف:</b> هو طريقة للتعبير عن نوع الكمية الفيزيائية بدلالة الكميات الأساسية (الكتلة [ك]، الطول [ل]، الزمن [ز]).</li><li><b>الهدف:</b> التحقق من صحة العلاقات الفيزيائية بمقارنة أبعاد الطرفين.</li></ul>" },
+        { title: "📏 الأبعاد الأساسية المستخدمة", content: "<ul><li><b>الكتلة:</b> يُرمز لها بالرمز [ك] (أو M).</li><li><b>الطول:</b> يُرمز له بالرمز [ل] (أو L).</li><li><b>الزمن:</b> يُرمز له بالرمز [ز] (أو T).</li></ul>" },
+        { title: "✅ القاعدة الأساسية (شرط التجانس)", content: "<ul><li>العلاقة الفيزيائية تكون <b>صحيحة</b> فقط إذا <b>تساوت أبعاد الطرف الأيمن مع أبعاد الطرف الأيسر</b>.</li><li>إذا اختلفت الأبعاد، فالعلاقة <b>خاطئة</b>.</li></ul>" },
+        { title: "📝 خطوات التحقق من العلاقة", content: "<ol><li>كتابة العلاقة الفيزيائية.</li><li>استبدال كل كمية فيزيائية بأبعادها الأساسية.</li><li>تبسيط الأبعاد في كل طرف.</li><li>مقارنة الأبعاد. إذا تطابقت، فالعلاقة متجانسة بعدياً.</li></ol>" },
+        { title: "⚠️ ملاحظات هامة", content: "<ul><li><b>الثوابت العددية</b> (مثل 2، 0.5، π) <b>ليس لها أبعاد</b> ولا تؤثر في التحليل البعدي.</li><li><b>التحليل البعدي لا يثبت صحة القانون نهائياً</b>، لكنه يثبت خطأه إذا لم تتجانس الأبعاد.</li></ul>" },
+        {
+            title: "🧪 مختبر التحليل البعدي (تحقق من صحة المعادلات)",
+            content: `
+                <div style="text-align:center; background: linear-gradient(135deg, #1a237e, #0288d1); color: white; padding: 12px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; font-size: 16px;">
+                    📏 سلسلة المرجع الذكي في الفيزياء - أ/ سياف الشباطي
+                </div>
+                <div style="background: #fff3e0; border-right: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="color: #e65100;">📋 تعليمات المختبر:</h4>
+                    <p>أدخل أبعاد الطرف الأيمن والأيسر للمعادلة. إذا تساوت الأبعاد، فالمعادلة <b>متجانسة بعدياً</b>.</p>
+                    <p>تذكر: الأبعاد الأساسية هي: <b>[ك]</b> للكتلة، <b>[ل]</b> للطول، <b>[ز]</b> للزمن.</p>
+                </div>
+                <div style="background: #e8eaf6; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                    <h4 style="text-align: center; color: #1a237e;" id="dimEquationTitle">المعادلة 1: السرعة = الإزاحة ÷ الزمن</h4>
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+                        <div style="flex: 1; min-width: 200px; background: #fff; padding: 15px; border-radius: 8px;">
+                            <b>الطرف الأيسر (السرعة):</b><br>
+                            <input type="text" id="dimLeft" placeholder="مثال: [ل][ز]⁻¹" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #aaa; border-radius: 6px; text-align: center;">
+                        </div>
+                        <div style="flex: 1; min-width: 200px; background: #fff; padding: 15px; border-radius: 8px;">
+                            <b>الطرف الأيمن (الإزاحة ÷ الزمن):</b><br>
+                            <input type="text" id="dimRight" placeholder="مثال: [ل] ÷ [ز] = [ل][ز]⁻¹" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #aaa; border-radius: 6px; text-align: center;">
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <button onclick="checkDimensions()" style="background: #0288d1; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer;">✅ تحقق</button>
+                        <button onclick="nextDimensionEquation()" style="background: #2e7d32; color: white; border: none; padding: 8px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-right: 10px;">▶️ المعادلة التالية</button>
+                    </div>
+                    <div id="dimFeedback" style="text-align: center; margin-top: 10px; font-weight: bold;"></div>
+                </div>
+                <h4 style="margin-top: 20px;">📊 سجل المحاولات</h4>
+                <table style="width: 100%; border-collapse: collapse;" id="dimTable">
+                    <thead><tr style="background: #1a237e; color: white;"><th>رقم</th><th>المعادلة</th><th>الطرف الأيسر</th><th>الطرف الأيمن</th><th>النتيجة</th></tr></thead>
+                    <tbody id="dimTableBody"><tr><td colspan="5" style="text-align: center; color: #888;">لم تسجل محاولات بعد</td></tr></tbody>
+                </table>
+            `
+        }
+    ],
+    islamicReflections: [
+        "📐 قال الله تعالى: ﴿لَا الشَّمْسُ يَنبَغِي لَهَا أَن تُدْرِكَ الْقَمَرَ وَلَا اللَّيْلُ سَابِقُ النَّهَارِ وَكُلٌّ فِي فَلَكٍ يَسْبَحُونَ﴾ (يس: 40)",
+        "✅ التحقق من صحة المعادلات يذكرنا بأهمية الصدق: قال ﷺ: «عليكم بالصدق، فإن الصدق يهدي إلى البر».",
+        "🔬 الثوابت الفيزيائية تعكس ثبات خلق الله: ﴿صُنْعَ اللَّهِ الَّذِي أَتْقَنَ كُلَّ شَيْءٍ﴾ (النمل: 88)"
+    ],
+    questions: [
+        { id: "q5_1", text: "الأبعاد تعبر عن نوع الكمية الفيزيائية.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q5_2", text: "أبعاد السرعة هي (ل/ز).", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q5_3", text: "وحدة القوة هي نيوتن.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q5_4", text: "الثوابت العددية مثل 2 و π تؤثر في الأبعاد.", type: "tf", correct: "false", explain: "❌ خطأ." },
+        { id: "q5_5", text: "التحليل البعدي يثبت صحة القانون نهائياً.", type: "tf", correct: "false", explain: "❌ خطأ." },
+        { id: "q5_6", text: "أبعاد الزمن هي (ز).", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q5_7", text: "الشغل أبعاده (ك × ل² × ز⁻²).", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q5_8", text: "إذا اختلفت أبعاد الطرفين فالعلاقة خاطئة.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q5_9", text: "وحدة التسارع هي:", type: "mc", options: ["م/ث²", "م/ث", "كجم/ث"], correct: "م/ث²", explain: "✅ متر لكل ثانية مربعة." },
+        { id: "q5_10", text: "أبعاد القوة هي:", type: "mc", options: ["ك × ل × ز⁻²", "ك × ل", "ك × ز"], correct: "ك × ل × ز⁻²", explain: "✅ [ك][ل][ز]⁻²." },
+        { id: "q5_11", text: "وحدة القوة تسمى:", type: "mc", options: ["نيوتن", "جول", "وات"], correct: "نيوتن", explain: "✅ النيوتن." },
+        { id: "q5_12", text: "أبعاد الكتلة هي:", type: "mc", options: ["ك", "ل", "ز"], correct: "ك", explain: "✅ [ك]." },
+        { id: "q5_13", text: "العلاقة غير المتجانسة بعدياً تكون:", type: "mc", options: ["خاطئة", "صحيحة", "تقريبية"], correct: "خاطئة", explain: "✅ خاطئة." },
+        { id: "q5_14", text: "وحدة السرعة هي:", type: "mc", options: ["م/ث", "م/ث²", "م"], correct: "م/ث", explain: "✅ متر/ثانية." },
+        { id: "q5_15", text: "أبعاد الزمن هي:", type: "mc", options: ["ز", "ك", "ل"], correct: "ز", explain: "✅ [ز]." },
+        { id: "q5_16", text: "أبعاد الطاقة تساوي:", type: "mc", options: ["ك×ل²×ز⁻²", "ك×ل×ز⁻²", "ك×ز"], correct: "ك×ل²×ز⁻²", explain: "✅ [ك][ل]²[ز]⁻²." },
+        { id: "q5_17", text: "التحليل البعدي يستخدم لـ:", type: "mc", options: ["التحقق من صحة العلاقات", "قياس الكتلة", "حساب الكثافة"], correct: "التحقق من صحة العلاقات", explain: "✅." },
+        { id: "q5_18", text: "الكمية كجم×م/ث تمثل:", type: "mc", options: ["السرعة", "الزخم", "القوة"], correct: "الزخم", explain: "✅ كمية التحرك." },
+        { id: "q5_19", text: "أبعاد المساحة هي:", type: "mc", options: ["ل²", "ل", "ل³"], correct: "ل²", explain: "✅ [ل]²." },
+        { id: "q5_20", text: "الكثافة بعدها:", type: "mc", options: ["ك×ل⁻³", "ك×ل", "ل×ز"], correct: "ك×ل⁻³", explain: "✅ [ك][ل]⁻³." }
+    ]
+},
+// الدرس السادس: المتجهات (21 سؤال)
+{
+    id: "lesson_6_vectors_lab",
+    title: "الدرس السادس: المتجهات (جمع المتجهات وتحليلها)",
+    unit: "unit1",
+    unitTitle: "الوحدة الأولى: أساسيات الفيزياء",
+    type: "accordion",
+    order: 6,
+    accordionData: [
+        { title: "🧭 تعريف المتجه وعناصر تحديده", content: "<ul><li><b>المتجه:</b> كمية فيزيائية متكاملة تتطلب تحديد مقدارها العددي واتجاهها الجغرافي معاً.</li><li><b>عناصر تحديد المتجه (4 عناصر):</b> نقطة التأثير (البداية)، خط العمل، الاتجاه، المقدار (الشدة).</li></ul>" },
+        { title: "➕ جمع المتجهات (الحالات الأساسية)", content: "<ul><li><b>في نفس الاتجاه:</b> المحصلة = A + B.</li><li><b>متعاكسان:</b> المحصلة = |A - B|.</li><li><b>متعامدان:</b> R = √(A² + B²).</li></ul>" },
+        { title: "📐 تحليل المتجهات", content: "<ul><li><b>المركبة الأفقية:</b> Rx = R × جتا θ.</li><li><b>المركبة الرأسية:</b> Ry = R × جا θ.</li></ul>" },
+        { title: "🧪 مختبر المتجهات الافتراضي", content: '<div style="background: #fff3e0; border-right: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><h4 style="color: #e65100;">📋 خطوات التجربة:</h4><ol><li>اضغط على زر <b>📺 ملء الشاشة</b>.</li><li>اختر <b>"معمل المتجهات"</b>.</li><li>اسحب المتجه (a) و (b) واضبطهما حسب الجدول.</li><li>فعّل خيار <b>المحصلة (SUM)</b> وسجل النتائج.</li></ol></div><div style="position: relative; width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 20px;" id="simContainerLesson"><button onclick="openFullscreenLesson()" style="position: absolute; top: 15px; left: 15px; background: #1565c0; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; z-index: 10;">📺 ملء الشاشة</button><iframe src="https://phet.colorado.edu/sims/html/vector-addition/latest/vector-addition_all.html?locale=ar&screens=1,2" style="width: 100%; height: 500px; border: none;"></iframe></div><h3 style="color: #1565c0; margin-top: 20px;">📊 جدول رصد وتحليل المتجهات (التصحيح الفوري)</h3><table style="width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff; font-size: 14px;"><thead><tr><th>A</th><th>B</th><th>θ</th><th>R</th><th>حالة</th></tr></thead><tbody><tr><td>A = 5</td><td>B = 5</td><td>0°</td><td><input type="number" id="row1_R_lesson" oninput="checkRow1Lesson()" style="width:80px;"><span id="feed_row1_lesson"></span></td><td>المحور السيني</td></tr><tr><td>A = 6</td><td>B = 8</td><td>90°</td><td><input type="number" id="row2_R_lesson" oninput="checkRow2Lesson()"><span id="feed_row2_lesson"></span></td><td>المحور الصادي</td></tr><tr><td>A = 10</td><td>B = 6</td><td>180°</td><td><input type="number" id="row3_R_lesson" oninput="checkRow3Lesson()"><span id="feed_row3_lesson"></span></td><td>باتجاه الأكبر</td></tr></tbody></table>' }
+    ],
+    islamicReflections: [
+        "🧭 قال الله تعالى: ﴿وَلِكُلٍّ وِجْهَةٌ هُوَ مُوَلِّيهَا﴾ (البقرة: 148)",
+        "➡️ المتجهات تعلمنا أن لكل شيء مقدارًا واتجاهًا، وكذلك حياتك تحتاج إلى هدف واضح.",
+        "📐 ﴿فَاسْتَبِقُوا الْخَيْرَاتِ﴾ (البقرة: 148) - السرعة في الاتجاه الصحيح هي سرعة إلى الله."
+    ],
+    questions: [
+        { id: "q6_1", text: "عناصر تحديد المتجه ثلاثة عناصر فقط.", type: "tf", correct: "false", explain: "❌ أربعة عناصر." },
+        { id: "q6_2", text: "يمكن نقل المتجه بشرط المحافظة على مقداره واتجاهه.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q6_3", text: "جمع متجهين في نفس الاتجاه يكون بالطرح.", type: "tf", correct: "false", explain: "❌ بالجمع." },
+        { id: "q6_4", text: "عند جمع متجهين متعاكسين نطرح الأصغر من الأكبر.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q6_5", text: "يمكن تحليل أي متجه إلى مركبتين متعامدتين.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q6_6", text: "عند التعامد نستخدم نظرية فيثاغورس.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q6_7", text: "المتجه له مقدار فقط.", type: "tf", correct: "false", explain: "❌ مقدار واتجاه." },
+        { id: "q6_8", text: "متجهان متساويان ومتعاكسان محصلتهما صفر.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q6_9", text: "المتجه يُرمز له بحرف فوقه سهم.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q6_10", text: "المركبة الأفقية = س × جا هـ.", type: "tf", correct: "false", explain: "❌ س × جتا هـ." },
+        { id: "q6_11", text: "المتجه هو كمية لها:", type: "mc", options: ["أ) مقدار فقط", "ب) اتجاه فقط", "ج) مقدار واتجاه"], correct: "ج) مقدار واتجاه", explain: "✅." },
+        { id: "q6_12", text: "طول السهم يدل على:", type: "mc", options: ["أ) المقدار", "ب) الاتجاه", "ج) نقطة الإسناد"], correct: "أ) المقدار", explain: "✅." },
+        { id: "q6_13", text: "إذا تحرك جسم 5م شرقاً ثم 5م غرباً، الإزاحة:", type: "mc", options: ["أ) 10م", "ب) 5م", "ج) صفر"], correct: "ج) صفر", explain: "✅." },
+        { id: "q6_14", text: "3 نيوتن شرق + 4 نيوتن شرق =", type: "mc", options: ["أ) 1", "ب) 7", "ج) 12"], correct: "ب) 7", explain: "✅." },
+        { id: "q6_15", text: "10 نيوتن شرق - 6 نيوتن غرب =", type: "mc", options: ["أ) 4", "ب) 16", "ج) 2"], correct: "ب) 16", explain: "✅." },
+        { id: "q6_16", text: "جمع متجهين في نفس الاتجاه:", type: "mc", options: ["أ) جمع المقدارين", "ب) طرح المقدارين", "ج) ضربهما"], correct: "أ) جمع المقدارين", explain: "✅." },
+        { id: "q6_17", text: "جمع متجهين متعامدين:", type: "mc", options: ["أ) فيثاغورس", "ب) الجمع المباشر", "ج) الطرح"], correct: "أ) فيثاغورس", explain: "✅." },
+        { id: "q6_18", text: "محصلة 6 و 8 نيوتن متعامدين:", type: "mc", options: ["أ) 14", "ب) 10", "ج) 2"], correct: "ب) 10", explain: "✅." },
+        { id: "q6_19", text: "المركبة الأفقية لزاوية هـ:", type: "mc", options: ["أ) س جتا هـ", "ب) س جا هـ", "ج) س ظا هـ"], correct: "أ) س جتا هـ", explain: "✅." },
+        { id: "q6_20", text: "المركبة الرأسية:", type: "mc", options: ["أ) س جتا هـ", "ب) س جا هـ", "ج) س ظا هـ"], correct: "ب) س جا هـ", explain: "✅." },
+        { id: "q6_21", text: "إذا كان رأس > ذيل فالاتجاه:", type: "mc", options: ["أ) الموجب", "ب) السالب", "ج) صفري"], correct: "أ) الموجب", explain: "✅." }
+    ]
+},
+// (يت    // الدرس السابع: الإزاحة (20 سؤال + مختبر)
+    {
+        id: "lesson_7_displacement",
+        title: "الدرس السابع: الإزاحة (الحركة في خط مستقيم)",
+        unit: "unit2",
+        unitTitle: "الوحدة الثانية: الحركة في خط مستقيم",
+        type: "accordion",
+        order: 7,
+        accordionData: [
+            { title: "📖 تعريف الإزاحة وخصائصها", content: "<ul><li><b>تعريف الإزاحة (ح):</b> هي أقصر مسافة مستقيمة بين موضعين، مع تحديد الاتجاه.</li><li><b>الخصائص:</b> تعتمد فقط على نقطة البداية والنهاية، لا تعتمد على شكل المسار. يمكن أن تكون موجبة أو سالبة، وقد تساوي صفراً حتى لو تحرك الجسم.</li><li><b>التمثيل:</b> ترسم على شكل سهم (متجه).</li></ul>" },
+            { title: "⚖️ الفرق بين المسافة والإزاحة", content: "<table style='width:100%; border-collapse:collapse; margin:10px 0;'><tr style='background:#1a237e; color:white;'><th>وجه المقارنة</th><th>المسافة</th><th>الإزاحة</th></tr><tr><td><b>التعريف</b></td><td>طول المسار الفعلي</td><td>أقصر خط مستقيم بين نقطتين</td></tr><tr><td><b>نوع الكمية</b></td><td>قياسية</td><td>متجهة</td></tr><tr><td><b>رمز الكمية</b></td><td>ف</td><td>ف أو ح</td></tr><tr><td><b>وحدة القياس</b></td><td>متر</td><td>متر</td></tr></table>" },
+            { title: "🧮 تطبيقات حسابية", content: "<ul><li><b>حركة في خط مستقيم:</b> سيارة من صنعاء إلى الحديدة (220 كم) ثم إلى مناخة (150 كم): المسافة = 220+150 = 370 كم، الإزاحة = 220-150 = 70 كم.</li><li><b>العودة لنقطة البداية:</b> المسافة = 440 كم، الإزاحة = صفر.</li><li><b>مسارات غير منتظمة:</b> نستخدم نظرية فيثاغورس لحساب الإزاحة.</li></ul>" },
+            { title: "🧪 مختبر المسار والإزاحة", content: `<div style="text-align:center; background: linear-gradient(135deg, #1a237e, #0288d1); color: white; padding: 12px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; font-size: 16px;">📏 سلسلة المرجع الذكي في الفيزياء - أ/ سياف الشباطي</div><div style="background: #fff3e0; border-right: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;"><h4 style="color: #e65100;">📋 دليل التجربة:</h4><ol style="margin-right: 20px;"><li>استخدم أزرار الاتجاهات لتحريك السيارة.</li><li>لاحظ <b>الأزرق</b> للمسافة، <b>الأخضر المتقطع</b> للإزاحة.</li><li>أدخل قيمك ثم اضغط تحقق.</li><li>سجل 4 محاولات ثم ارفع النتائج.</li></ol></div><div style="text-align:center; background: #1a237e; color:white; padding:8px; border-radius:8px; margin-bottom:15px;">🚗 حرك السيارة على الشبكة</div><canvas id="simCanvas" width="320" height="320" style="border:2px solid #333; background:#fff; display:block; margin:10px auto;"></canvas><div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin:10px 0;"><button onclick="moveCar(-40,-40)" style="padding:10px;">↖️</button><button onclick="moveCar(0,-40)" style="padding:10px;">⬆️</button><button onclick="moveCar(40,-40)" style="padding:10px;">↗️</button><button onclick="moveCar(-40,0)" style="padding:10px;">⬅️</button><button onclick="moveCar(40,0)" style="padding:10px;">➡️</button><button onclick="moveCar(-40,40)" style="padding:10px;">↙️</button><button onclick="moveCar(0,40)" style="padding:10px;">⬇️</button><button onclick="moveCar(40,40)" style="padding:10px;">↘️</button></div><div style="display:flex; gap:20px; justify-content:center; margin:10px 0;"><div><b>المسافة:</b> <input type="number" id="distIn" step="0.1" style="width:80px;"></div><div><b>الإزاحة:</b> <input type="number" id="dispIn" step="0.1" style="width:80px;"></div></div><button onclick="checkDisplacement()" style="display:block; margin:10px auto; background:#0288d1; color:white; border:none; padding:8px 20px; border-radius:6px;">تحقق</button><p id="labFeedbackDisplacement" style="text-align:center; font-weight:bold;"></p><button onclick="resetSim()" style="display:block; margin:10px auto; background:#c62828; color:white; border:none; padding:8px 20px; border-radius:6px;">إعادة تعيين</button><h4 style="margin-top:25px;">📊 جدول المحاولات</h4><table style="width:100%;" id="attemptsTable"><thead><tr style="background:#1a237e; color:white;"><th>رقم</th><th>المسافة المُدخلة</th><th>الإزاحة المُدخلة</th><th>المسافة الحقيقية</th><th>الإزاحة الحقيقية</th><th>الحالة</th></tr></thead><tbody id="attemptsBody"><tr><td colspan="6" style="text-align:center; color:#888;">لم تسجل أي محاولة بعد</td></tr></tbody></table><button onclick="saveAttempt()" style="margin:10px 5px; background:#2e7d32; color:white; border:none; padding:8px 15px; border-radius:6px;">📝 سجل المحاولة</button><button onclick="submitAttempts()" style="margin:10px 5px; background:#ff9800; color:white; border:none; padding:8px 15px; border-radius:6px;">📤 رفع النتائج</button>` }
+        ],
+        islamicReflections: [
+            "🚶 قال الله تعالى: ﴿أَلَمْ تَكُنْ أَرْضُ اللَّهِ وَاسِعَةً فَتُهَاجِرُوا فِيهَا﴾ (النساء: 97)",
+            "📏 الإزاحة هي أقصر طريق إلى الهدف، مثلها مثل الصراط المستقيم.",
+            "🕌 ﴿وَأَنَّ هَذَا صِرَاطِي مُسْتَقِيمًا فَاتَّبِعُوهُ وَلَا تَتَّبِعُوا السُّبُلَ﴾ (الأنعام: 153)"
+        ],
+        questions: [
+            { id: "q7_1", text: "الإزاحة كمية قياسية.", type: "tf", correct: "false", explain: "❌ متجهة." },
+            { id: "q7_2", text: "الإزاحة تمثل أقصر مسافة بين نقطتين.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q7_3", text: "يمكن أن تكون الإزاحة سالبة.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q7_4", text: "المسافة والإزاحة لهما نفس المعنى.", type: "tf", correct: "false", explain: "❌." },
+            { id: "q7_5", text: "وحدة الإزاحة هي المتر.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q7_6", text: "إذا عاد الجسم للبداية فالإزاحة صفر.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q7_7", text: "الإزاحة تعتمد على شكل المسار.", type: "tf", correct: "false", explain: "❌." },
+            { id: "q7_8", text: "10م شمالاً ثم 10م جنوباً إزاحته 20م.", type: "tf", correct: "false", explain: "❌ صفر." },
+            { id: "q7_9", text: "المسافة يمكن أن تكون صفراً والإزاحة لا.", type: "tf", correct: "false", explain: "❌." },
+            { id: "q7_10", text: "4م شرقاً ثم 3م شرقاً فالإزاحة 7م شرقاً.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q7_11", text: "إذا تحرك 6م شرقاً ثم 2م غرباً، الإزاحة:", type: "mc", options: ["أ) 8م شرقاً", "ب) 4م شرقاً", "ج) 4م غرباً"], correct: "ب) 4م شرقاً", explain: "✅." },
+            { id: "q7_12", text: "إذا عاد للبداية فالإزاحة:", type: "mc", options: ["أ) تساوي المسافة", "ب) صفر", "ج) أكبر"], correct: "ب) صفر", explain: "✅." },
+            { id: "q7_13", text: "المسافة تمثل:", type: "mc", options: ["أ) أقصر خط", "ب) الاتجاه", "ج) طول المسار"], correct: "ج) طول المسار", explain: "✅." },
+            { id: "q7_14", text: "الإزاحة ترسم على شكل:", type: "mc", options: ["أ) نقطة", "ب) دائرة", "ج) سهم"], correct: "ج) سهم", explain: "✅." },
+            { id: "q7_15", text: "العلاقة بين المسافة والإزاحة:", type: "mc", options: ["أ) متساويتان", "ب) الإزاحة أكبر", "ج) المسافة ≥ الإزاحة"], correct: "ج) المسافة ≥ الإزاحة", explain: "✅." },
+            { id: "q7_16", text: "إذا لم يتحرك الجسم:", type: "mc", options: ["أ) المسافة>صفر", "ب) كلاهما صفر", "ج) الإزاحة>صفر"], correct: "ب) كلاهما صفر", explain: "✅." },
+            { id: "q7_17", text: "8م جنوباً ثم 8م شمالاً فالإزاحة:", type: "mc", options: ["أ) 4م", "ب) 8م", "ج) صفر"], correct: "ج) صفر", explain: "✅." },
+            { id: "q7_18", text: "المسافة دائمًا:", type: "mc", options: ["أ) سالبة", "ب) موجبة", "ج) صفر"], correct: "ب) موجبة", explain: "✅." },
+            { id: "q7_19", text: "مسار دائري والعودة للبداية فالإزاحة:", type: "mc", options: ["أ) صفر", "ب) القطر", "ج) المحيط"], correct: "أ) صفر", explain: "✅." },
+            { id: "q7_20", text: "وحدة الإزاحة:", type: "mc", options: ["أ) م/ث", "ب) متر", "ج) نيوتن"], correct: "ب) متر", explain: "✅." }
+        ]
+    },
+    // الدرس الثامن: السرعة (20 سؤال + مختبر)
+    {
+        id: "lesson_8_speed",
+        title: "الدرس الثامن: السرعة",
+        unit: "unit2",
+        unitTitle: "الوحدة الثانية: الحركة في خط مستقيم",
+        type: "accordion",
+        order: 8,
+        accordionData: [
+            { title: "📖 مفهوم السرعة والقوانين", content: "<ul><li><b>السرعة (ع):</b> هي معدل التغير في الإزاحة بالنسبة للزمن. <b>ع = ف ÷ ز</b></li><li><b>العلاقة الطردية:</b> تتناسب طردياً مع الإزاحة.</li><li><b>العلاقة العكسية:</b> تتناسب عكسياً مع الزمن.</li><li><b>اتجاه السرعة:</b> كمية متجهة، اتجاهها نفس اتجاه الإزاحة.</li></ul>" },
+            { title: "📏 وحدات القياس والتحويل", content: "<ul><li><b>النظام العالمي:</b> م/ث.</li><li><b>نظام جاوس:</b> سم/ث.</li><li><b>التحويل:</b> من كم/س إلى م/ث: <b>نقسم على 3.6</b>.</li></ul>" },
+            { title: "⚡ أنواع السرعة", content: "<ul><li><b>المنتظمة:</b> مسافات متساوية في أزمنة متساوية.</li><li><b>المتوسطة:</b> المسافة الكلية ÷ الزمن الكلي (كمية قياسية).</li><li><b>اللحظية:</b> سرعة الجسم في لحظة (ميل المماس).</li></ul>" },
+            {
+                title: "🧪 مختبر السرعة التفاعلي (متعدد المحاولات مع أزرار تحكم)",
+                content: `
+                    <div style="text-align:center; background: linear-gradient(135deg, #1a237e, #0288d1); color: white; padding: 12px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; font-size: 16px;">
+                        📏 سلسلة المرجع الذكي في الفيزياء - أ/ سياف الشباطي
+                    </div>
+                    <div style="background: #fff3e0; border-right: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #e65100;">📋 دليل المختبر:</h4>
+                        <ol style="margin-right: 20px;">
+                            <li>اضبط <b>السرعة</b> باستخدام الأزرار (+/-).</li>
+                            <li>اضغط <b>بدء المحاولة</b> لتحريك السيارة.</li>
+                            <li>اضغط <b>إنهاء المحاولة</b> لتسجيل الزمن والمسافة.</li>
+                            <li>كرر العملية لعدة محاولات (سرعات مختلفة).</li>
+                            <li>اضغط <b>احسب المتوسط</b> لرؤية النتيجة النهائية.</li>
+                        </ol>
+                    </div>
+
+                    <div style="background: #1e293b; border-radius: 20px; padding: 20px; color: white;">
+                        <div id="speedLabTrack" style="width:100%; height:80px; background:#0f172a; border:2px solid #38bdf8; border-radius:10px; position:relative; margin-bottom:15px;">
+                            <div id="speedLabCar" style="width:50px; height:35px; background:#ef4444; position:absolute; left:0px; top:22px; border-radius:6px; transition:left 0.05s; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:bold;">🚗</div>
+                        </div>
+                        
+                        <canvas id="speedLabCanvas" width="650" height="200" style="background:white; border-radius:10px; display:block; margin-bottom:15px;"></canvas>
+                        
+                        <div style="display:flex; gap:15px; align-items:center; justify-content:center; margin-bottom:20px; flex-wrap:wrap;">
+                            <button onclick="speedLabChangeSpeed(-10)" style="padding:10px 20px; background:#ef4444; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:18px;">➖</button>
+                            <span style="font-size:24px; font-weight:bold;">السرعة: <span id="speedLabCurrentSpeed">20</span> كم/س</span>
+                            <button onclick="speedLabChangeSpeed(10)" style="padding:10px 20px; background:#10b981; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:18px;">➕</button>
+                        </div>
+                        
+                        <div style="display:flex; gap:15px; justify-content:center; margin-bottom:20px; flex-wrap:wrap;">
+                            <button onclick="speedLabStartAttempt()" style="padding:12px 25px; background:#3b82f6; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">▶️ بدء المحاولة</button>
+                            <button onclick="speedLabEndAttempt()" style="padding:12px 25px; background:#f59e0b; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">⏹️ إنهاء المحاولة</button>
+                            <button onclick="speedLabCalcAverage()" style="padding:12px 25px; background:#8b5cf6; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📊 احسب المتوسط</button>
+                        </div>
+                        <div id="speedLabAttemptsContainer" style="margin-top:15px;">
+                            <h4 style="text-align:center;">📋 سجل المحاولات</h4>
+                            <table style="width:100%; border-collapse:collapse;" id="speedLabAttemptsTable">
+                                <thead><tr style="background:#334155;"><th>المحاولة</th><th>السرعة (كم/س)</th><th>الزمن (ث)</th><th>المسافة (م)</th></tr></thead>
+                                <tbody id="speedLabAttemptsBody"><tr><td colspan="4" style="text-align:center; color:#888;">لم تسجل محاولات بعد</td></tr></tbody>
+                            </table>
+                            <div id="speedLabAverageDisplay" style="text-align:center; font-size:20px; font-weight:bold; margin-top:10px;"></div>
+                        </div>
+                        <button onclick="speedLabResetAll()" style="display:block; margin:15px auto 0; background:#ef4444; color:white; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer;">🔄 إعادة تعيين كل شيء</button>
+                    </div>
+                `
+            }
+        ],
+        islamicReflections: [
+            "⚡ قال الله تعالى: ﴿وَسَارِعُوا إِلَى مَغْفِرَةٍ مِّن رَّبِّكُمْ وَجَنَّةٍ عَرْضُهَا السَّمَاوَاتُ وَالْأَرْضُ﴾ (آل عمران: 133)",
+            "⏱️ ﴿وَجَعَلْنَا اللَّيْلَ وَالنَّهَارَ آيَتَيْنِ﴾ (الإسراء: 12) - الزمن نعمة والسرعة في الطاعة مطلوبة.",
+            "🏁 قال ﷺ: «بادروا بالأعمال سبعًا» - السرعة في الخير قبل فوات الأوان."
+        ],
+        questions: [
+            { id: "q8_1", text: "السرعة كمية متجهة.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_2", text: "وحدة السرعة في SI هي م/ث.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_3", text: "100م في 20ث تعطي سرعة 5 م/ث.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_4", text: "السرعة اللحظية هي سرعة الرحلة كاملة.", type: "tf", correct: "false", explain: "❌." },
+            { id: "q8_5", text: "للتحويل من كم/س إلى م/ث نضرب في (1000/3600).", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_6", text: "الخط الأفقي في منحنى (ف-ز) يعني توقف.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_7", text: "كلما زاد الميل زادت السرعة.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_8", text: "72 كم/س = 20 م/ث.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_9", text: "زيادة السرعة تقلل زمن قطع المسافة.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_10", text: "60كم في ساعة ثم 60كم في ساعة: المتوسطة 60.", type: "tf", correct: "true", explain: "✅." },
+            { id: "q8_11", text: "400م في 80ث =", type: "mc", options: ["أ) 0.2", "ب) 20", "ج) 5"], correct: "ج) 5", explain: "✅." },
+            { id: "q8_12", text: "قراءة عداد السيارة تسمى:", type: "mc", options: ["أ) سرعة", "ب) لحظية", "ج) متوسطة"], correct: "ب) لحظية", explain: "✅." },
+            { id: "q8_13", text: "90 كم/س =", type: "mc", options: ["أ) 324", "ب) 25", "ج) 20"], correct: "ب) 25", explain: "✅." },
+            { id: "q8_14", text: "ميل منحنى (ف-ز) يمثل:", type: "mc", options: ["أ) الزمن", "ب) السرعة", "ج) الإزاحة"], correct: "ب) السرعة", explain: "✅." },
+            { id: "q8_15", text: "300كم في 4س =", type: "mc", options: ["أ) 75", "ب) 1200", "ج) 0.013"], correct: "أ) 75", explain: "✅." },
+            { id: "q8_16", text: "وحدة السرعة في SI:", type: "mc", options: ["أ) كم/س", "ب) م/ث", "ج) سم/ث"], correct: "ب) م/ث", explain: "✅." },
+            { id: "q8_17", text: "السرعة كمية:", type: "mc", options: ["أ) قياسية", "ب) متجهة", "ج) عددية"], correct: "ب) متجهة", explain: "✅." },
+            { id: "q8_18", text: "لتحويل 36 كم/س إلى م/ث:", type: "mc", options: ["أ) ×1000/3600", "ب) ×3600/1000", "ج) ×3.6"], correct: "أ) ×1000/3600", explain: "✅." },
+            { id: "q8_19", text: "زيادة المسافة مع ثبات الزمن:", type: "mc", options: ["أ) تقل السرعة", "ب) تزداد", "ج) تبقى ثابتة"], correct: "ب) تزداد", explain: "✅." },
+            { id: "q8_20", text: "سرعة 10م/ث في 5ث =", type: "mc", options: ["أ) 2م", "ب) 50م", "ج) 15م"], correct: "ب) 50م", explain: "✅." }
+        ]
+    },
+    // الدرس التاسع: العجلة (20 سؤال + أمثلة تفاعلية + مختبر متكامل)
+    {
+        id: "lesson_9_acceleration",
+        title: "الدرس التاسع: العجلة (التسارع)",
+        unit: "unit2",
+        unitTitle: "الوحدة الثانية: الحركة في خط مستقيم",
+        type: "accordion",
+        order: 9,
+        accordionData: [
+            { title: "📖 مفهوم العجلة (التسارع)", content: "<ul><li><b>العجلة (جـ):</b> هي معدل تغير السرعة بالنسبة للزمن.</li><li><b>شروط حدوث العجلة:</b> تغير مقدار السرعة، أو تغير اتجاهها، أو كلاهما.</li><li><b>القانون:</b> ج = Δع / ز = (ع₂ - ع₁) / ز</li><li><b>وحدة القياس:</b> متر/ثانية² (م/ث²) في SI، وسنتيمتر/ثانية² في جاوس.</li><li><b>نوع الكمية:</b> متجهة، اتجاهها نفس اتجاه تغير السرعة.</li></ul>" },
+            { title: "📊 أنواع العجلة", content: "<ul><li><b>موجبة (تسارع):</b> عندما تزيد السرعة.</li><li><b>سالبة (تباطؤ):</b> عندما تقل السرعة.</li><li><b>صفرية:</b> عندما تكون السرعة ثابتة.</li></ul>" },
+            { title: "📈 التمثيل البياني (منحنى السرعة-الزمن)", content: "<ul><li><b>الميل:</b> العجلة = ميل الخط المستقيم.</li><li><b>المساحة:</b> المسافة = المساحة تحت المنحنى.</li><li><b>الخط الأفقي:</b> عجلة صفرية.</li></ul>" },
+            {
+                title: "🧮 أمثلة تفاعلية (استخرج المعطيات بنفسك)",
+                content: `
+                    <div style="background: #e8eaf6; border-radius: 12px; padding: 20px;">
+                        <h4 style="text-align:center;">📝 تدريب تفاعلي - استخرج المعطيات وطبق القانون</h4>
+                        <p style="text-align:center; color: #555;">اقرأ المسألة جيداً، واستخرج المعطيات بنفسك. إذا كانت إجابتك صحيحة، ستنتقل إلى المثال التالي.</p>
+                        
+                        <!-- مثال 1 -->
+                        <div id="ex1_card" style="background:white; padding:15px; margin:15px 0; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1);">
+                            <h5 style="color:#0d47a1;">🚗 مثال 1: سيارة تتسارع</h5>
+                            <p style="background:#f5f5f5; padding:10px; border-radius:6px;"><b>📋 المسألة:</b> تغيرت سرعة سيارة من 36 كم/س إلى 90 كم/س خلال 20 ثانية. احسب العجلة بوحدة م/ث²، واذكر نوعها.</p>
+                            <div id="ex1_step1"><b>🔢 الخطوة 1: حول السرعات إلى م/ث</b><br> 36 كم/س = <input type="number" id="ex1_v1" style="width:80px;" placeholder="؟"> م/ث ، 90 كم/س = <input type="number" id="ex1_v2" style="width:80px;" placeholder="؟"> م/ث <button onclick="ex1Check()" style="background:#0288d1; color:white; border:none; padding:5px 12px; border-radius:4px;">تحقق</button> <span id="ex1_fb"></span></div>
+                        </div>
+
+                        <!-- مثال 2 -->
+                        <div id="ex2_card" style="background:white; padding:15px; margin:15px 0; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); display:none;">
+                            <h5 style="color:#0d47a1;">🚂 مثال 2: قطار يتباطأ</h5>
+                            <p style="background:#f5f5f5; padding:10px; border-radius:6px;"><b>📋 المسألة:</b> يتحرك قطار بسرعة 108 كم/س، وضغط السائق على الفرامل حتى توقف بعد 15 ثانية. احسب العجلة، واذكر نوعها.</p>
+                            <div id="ex2_step1"><b>🔢 الخطوة 1: السرعة الابتدائية بوحدة م/ث</b><br> 108 كم/س = <input type="number" id="ex2_v1" style="width:80px;" placeholder="؟"> م/ث <button onclick="ex2Check()" style="background:#0288d1; color:white; border:none; padding:5px 12px; border-radius:4px;">تحقق</button> <span id="ex2_fb"></span></div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                title: "🧪 مختبر العجلة التفاعلي (3 محاولات ترفع للأستاذ)",
+                content: `
+                    <div style="text-align:center; background: linear-gradient(135deg, #1a237e, #0288d1); color: white; padding: 12px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; font-size: 16px;">
+                        📏 سلسلة المرجع الذكي في الفيزياء - أ/ سياف الشباطي
+                    </div>
+                    <div style="background: #fff3e0; border-right: 5px solid #ff9800; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="color: #e65100;">📋 دليل التجربة:</h4>
+                        <ol style="margin-right: 20px;">
+                            <li>اختر <b>نوع العجلة</b> (موجبة، سالبة، صفرية) من الأزرار.</li>
+                            <li>أدخل <b>قيمة العجلة</b> والمدة الزمنية.</li>
+                            <li>اضغط <b>«تشغيل المقطع»</b> ولاحظ حركة السيارة والمنحنى.</li>
+                            <li><b>احسب العجلة يدوياً</b> وأدخلها ثم اضغط «تحقق».</li>
+                            <li>كرر <b>3 مرات</b> بقيم مختلفة.</li>
+                            <li>اضغط <b>«رفع المحاولات»</b> لإرسال النتائج للأستاذ.</li>
+                        </ol>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+                        <div style="flex: 1; min-width: 150px; background: #e3f2fd; padding: 15px; border-radius: 10px; text-align: center;">
+                            <b>السرعة الحالية</b><br>
+                            <span id="accelLabVel" style="font-size: 28px; color: #1a237e;">0</span> م/ث
+                        </div>
+                        <div style="flex: 1; min-width: 150px; background: #e8f5e9; padding: 15px; border-radius: 10px; text-align: center;">
+                            <b>الزمن</b><br>
+                            <span id="accelLabTime" style="font-size: 28px; color: #2e7d32;">0</span> ث
+                        </div>
+                        <div style="flex: 1; min-width: 150px; background: #fff3e0; padding: 15px; border-radius: 10px; text-align: center;">
+                            <b>المسافة</b><br>
+                            <span id="accelLabDist" style="font-size: 28px; color: #e65100;">0</span> م
+                        </div>
+                    </div>
+
+                    <div style="position: relative; width: 100%; height: 70px; background: #1e293b; border-radius: 35px; overflow: hidden; margin-bottom: 15px; border: 2px solid #334155;">
+                        <div id="accelLabCar" style="position: absolute; top: 50%; transform: translateY(-50%); font-size: 30px; left: 20px; white-space: nowrap;">🚗</div>
+                    </div>
+
+                    <canvas id="accelCanvas" width="700" height="180" style="width: 100%; background: white; border: 2px solid #1a237e; border-radius: 8px; margin-bottom: 15px;"></canvas>
+
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap;">
+                        <button onclick="accelLabSetType('positive')" style="padding: 8px 20px; border-radius: 25px; border: 2px solid #4caf50; background: #e8f5e9; cursor: pointer; font-weight: bold;">🚀 موجب</button>
+                        <button onclick="accelLabSetType('negative')" style="padding: 8px 20px; border-radius: 25px; border: 2px solid #f44336; background: #ffebee; cursor: pointer; font-weight: bold;">🛑 سالب</button>
+                        <button onclick="accelLabSetType('zero')" style="padding: 8px 20px; border-radius: 25px; border: 2px solid #2196f3; background: #e3f2fd; cursor: pointer; font-weight: bold;">➡️ صفر</button>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 10px;">
+                        <input type="number" id="accelLabInput" step="0.1" value="2" style="width: 90px; padding: 8px; text-align: center; border: 2px solid #ccc; border-radius: 8px;" placeholder="العجلة">
+                        <input type="number" id="accelLabTimeInput" step="0.1" value="3" min="0.1" style="width: 90px; padding: 8px; text-align: center; border: 2px solid #ccc; border-radius: 8px;" placeholder="الزمن (ث)">
+                        <button onclick="accelLabRun()" style="padding: 8px 20px; background: #0288d1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">▶ تشغيل المقطع</button>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap; margin: 10px 0;">
+                        <span>✍️ احسب العجلة:</span>
+                        <input type="number" id="accelLabGuess" step="0.01" style="width: 100px; padding: 6px; text-align: center; border: 2px solid #ccc; border-radius: 6px;" placeholder="؟">
+                        <button onclick="accelLabVerify()" style="padding: 6px 18px; background: #4caf50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">✅ تحقق</button>
+                        <span id="accelLabFeedback" style="font-weight: bold; font-size: 16px;"></span>
+                    </div>
+
+                    <h4 style="margin-top: 20px;">📊 سجل المحاولات (3 محاولات كحد أقصى)</h4>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;" id="accelLabTable">
+                        <thead><tr style="background: #1a237e; color: white;"><th>#</th><th>النوع</th><th>العجلة</th><th>الزمن</th><th>السرعة النهائية</th><th>المسافة</th><th>حسابك</th><th>الحالة</th></tr></thead>
+                        <tbody id="accelLabBody"><tr><td colspan="8">لم تسجل محاولات</td></tr></tbody>
+                    </table>
+
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                        <button onclick="accelLabSubmit()" style="padding: 10px 25px; background: #ff9800; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">📤 رفع المحاولات للأستاذ</button>
+                        <button onclick="accelLabReset()" style="padding: 10px 25px; background: #757575; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">🔄 إعادة تعيين</button>
+                    </div>
+                `
+            }
+        ],
+        islamicReflections: [
+            "⚡ قال الله تعالى: ﴿وَسَارِعُوا إِلَى مَغْفِرَةٍ مِّن رَّبِّكُمْ وَجَنَّةٍ عَرْضُهَا السَّمَاوَاتُ وَالْأَرْضُ﴾ (آل عمران: 133)",
+            "⏱️ ﴿وَجَعَلْنَا اللَّيْلَ وَالنَّهَارَ آيَتَيْنِ﴾ (الإسراء: 12) - الزمن نعمة والتسارع في الطاعة مطلوب.",
+            "🏁 قال ﷺ: «بادروا بالأعمال سبعًا» - السرعة في الخير قبل فوات الأوان."
+        ],
+        questions: [
+            { id: "q9_1", text: "وحدة قياس العجلة هي (متر / ثانية).", type: "tf", correct: "false", explain: "❌ الوحدة الصحيحة هي متر/ثانية² (م/ث²)." },
+            { id: "q9_2", text: "إذا كانت عجلة جسم تساوي صفرًا، فهذا يعني أن الجسم لا يتحرك أبدًا.", type: "tf", correct: "false", explain: "❌ العجلة الصفرية تعني أن السرعة ثابتة، وقد يتحرك الجسم بسرعة ثابتة." },
+            { id: "q9_3", text: "العجلة كمية قياسية يعبر عنها بقيمة عددية فقط.", type: "tf", correct: "false", explain: "❌ العجلة كمية متجهة تحتاج إلى مقدار واتجاه." },
+            { id: "q9_4", text: "عندما تزيد سرعة سيارة من 30 كم/س إلى 50 كم/س، فإنها تتحرك بعجلة موجبة.", type: "tf", correct: "true", explain: "✅ زيادة السرعة تعني عجلة موجبة." },
+            { id: "q9_5", text: "التباطؤ حركة الجسم يكون فيها اتجاه العجلة معاكساً لاتجاه السرعة.", type: "tf", correct: "true", explain: "✅ في التباطؤ تكون العجلة عكس اتجاه الحركة." },
+            { id: "q9_6", text: "ميل الخط البياني في منحنى (السرعة المتجهة - الزمن) يمثل المسافة.", type: "tf", correct: "false", explain: "❌ الميل يمثل العجلة، والمساحة تمثل المسافة." },
+            { id: "q9_7", text: "عندما نقول إن عجلة جسم تساوي 4 م/ث²، فهذا يعني أن سرعته تزداد بمقدار 4 م/ث كل ثانية.", type: "tf", correct: "true", explain: "✅ هذا هو معنى العجلة." },
+            { id: "q9_8", text: "المساحة تحت منحنى السرعة - الزمن تمثل المسافة، وليس العجلة.", type: "tf", correct: "true", explain: "✅ المساحة = المسافة المقطوعة." },
+            { id: "q9_9", text: "العجلة المنتظمة تعني أن التغير في السرعة خلال فترات زمنية متساوية هو مقدار ثابت.", type: "tf", correct: "true", explain: "✅ هذا تعريف العجلة المنتظمة." },
+            { id: "q9_10", text: "تكون العجلة المنتظمة سالبة إذا كانت السرعة تزداد بشكل منتظم.", type: "tf", correct: "false", explain: "❌ العجلة السالبة تعني تناقص السرعة (تباطؤ)." },
+            { id: "q9_11", text: "وحدة قياس العجلة في النظام الدولي هي:", type: "mc", options: ["أ) م/ث", "ب) م/ث²", "ج) كم/س²", "د) م/ث³"], correct: "ب) م/ث²", explain: "✅ متر لكل ثانية تربيع." },
+            { id: "q9_12", text: "معنى عجلة تساوي 5 م/ث² هو:", type: "mc", options: ["أ) سرعة الجسم 5 م/ث", "ب) سرعته تتغير 5 م/ث كل ثانية", "ج) يقطع 5 م كل ثانية", "د) الزمن 5 ثواني"], correct: "ب) سرعته تتغير 5 م/ث كل ثانية", explain: "✅." },
+            { id: "q9_13", text: "سيارة تضغط على الفرامل، فإن عجلتها:", type: "mc", options: ["أ) موجبة", "ب) سالبة", "ج) صفرية", "د) متذبذبة"], correct: "ب) سالبة", explain: "✅ التباطؤ = عجلة سالبة." },
+            { id: "q9_14", text: "جسم يتحرك بسرعة ثابتة 20 م/ث، فإن عجلته:", type: "mc", options: ["أ) صفر", "ب) 20", "ج) 10", "د) 5"], correct: "أ) صفر", explain: "✅ السرعة الثابتة تعني عجلة صفرية." },
+            { id: "q9_15", text: "ميل الخط في منحنى السرعة-الزمن يمثل:", type: "mc", options: ["أ) العجلة", "ب) المسافة", "ج) السرعة", "د) الزمن"], correct: "أ) العجلة", explain: "✅." },
+            { id: "q9_16", text: "التسارع صفراً في حالة:", type: "mc", options: ["أ) سيارة تنطلق من السكون", "ب) سيارة تسير بسرعة 90 كم/س بثبات", "ج) سيارة تضغط فرامل", "د) سيارة تدور"], correct: "ب) سيارة تسير بسرعة 90 كم/س بثبات", explain: "✅." },
+            { id: "q9_17", text: "تغيرت سرعة جسم من 10 إلى 20 م/ث في 5 ثوانٍ. العجلة =", type: "mc", options: ["أ) 2 م/ث²", "ب) 4 م/ث²", "ج) 10 م/ث²", "د) 0.5 م/ث²"], correct: "أ) 2 م/ث²", explain: "✅ (20-10) ÷ 5 = 2." },
+            { id: "q9_18", text: "في حالة التباطؤ:", type: "mc", options: ["أ) العجلة والسرعة في نفس الاتجاه", "ب) العجلة والسرعة متعاكستان", "ج) السرعة ثابتة", "د) العجلة صفر"], correct: "ب) العجلة والسرعة متعاكستان", explain: "✅." },
+            { id: "q9_19", text: "سيارة تغيرت سرعتها من 36 كم/س إلى 90 كم/س في 20 ث. العجلة بوحدة م/ث² =", type: "mc", options: ["أ) 0.75", "ب) 1.25", "ج) 2.7", "د) 0.5"], correct: "أ) 0.75", explain: "✅ 36→10 م/ث، 90→25 م/ث. (25-10)÷20=0.75." },
+            { id: "q9_20", text: "قطار يتباطأ من 108 كم/س حتى التوقف في 15 ث. عجلته =", type: "mc", options: ["أ) -2 م/ث²", "ب) 2 م/ث²", "ج) -7.2 م/ث²", "د) 7.2 م/ث²"], correct: "أ) -2 م/ث²", explain: "✅ 108÷3.6=30 م/ث. (0-30)÷15=-2." }
+        ]
+    },
+    // الدرس العاشر: معادلات الحركة في خط مستقيم بعجلة منتظمة (مُعدَّل)
+{
+    id: "lesson_10_kinematics",
+    title: "الدرس العاشر: معادلات الحركة في خط مستقيم بعجلة منتظمة",
+    unit: "unit2",
+    unitTitle: "الوحدة الثانية: الحركة في خط مستقيم",
+    order: 10,
+    accordionData: [
+        {
+            title: "📖 الرموز الأساسية والقوانين",
+            content: `
+                <ul>
+                    <li><b>ز (الزمن):</b> الفترة المستغرقة لتغير حالة الحركة.</li>
+                    <li><b>ف (المسافة/الإزاحة):</b> البعد المقطوع خلال الحركة.</li>
+                    <li><b>ج (العجلة):</b> معدل تغير السرعة بمرور الزمن.</li>
+                    <li><b>ع (السرعة النهائية):</b> سرعة الجسم في نهاية الفترة الزمنية.</li>
+                    <li><b>ع₀ (السرعة الابتدائية):</b> سرعة الجسم عند بداية الرصد.</li>
+                </ul>
+                <p><b>المعادلات الأساسية (للعجلة المنتظمة فقط):</b></p>
+                <ol>
+                    <li><b>ع = ع₀ + ج ز</b></li>
+                    <li><b>ف = ع₀ ز + ½ ج ز²</b></li>
+                    <li><b>ع² = ع₀² + 2 ج ف</b></li>
+                </ol>
+            `
+        },
+        {
+            title: "🧩 نشاط (1): طابق الكمية برمزها",
+            content: `
+                <div style="background:#e3f2fd; padding:20px; border-radius:12px;">
+                    <h4 style="color:#0d47a1; text-align:center;">اسحب الرمز إلى الكمية الصحيحة</h4>
+                    <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:20px;">
+                        <div style="flex:1; min-width:200px;">
+                            <p><b>الكمية:</b> الزمن</p>
+                            <div id="drop1" style="border:2px dashed #1565c0; padding:10px; min-height:40px; text-align:center; border-radius:8px;" ondragover="event.preventDefault()" ondrop="dropMatch(event, 'ز', 'drop1')">أسقط الرمز هنا</div>
+                            <p><b>الكمية:</b> المسافة</p>
+                            <div id="drop2" style="border:2px dashed #1565c0; padding:10px; min-height:40px; text-align:center; border-radius:8px;" ondragover="event.preventDefault()" ondrop="dropMatch(event, 'ف', 'drop2')">أسقط الرمز هنا</div>
+                            <p><b>الكمية:</b> السرعة الابتدائية</p>
+                            <div id="drop3" style="border:2px dashed #1565c0; padding:10px; min-height:40px; text-align:center; border-radius:8px;" ondragover="event.preventDefault()" ondrop="dropMatch(event, 'ع₀', 'drop3')">أسقط الرمز هنا</div>
+                            <p><b>الكمية:</b> العجلة</p>
+                            <div id="drop4" style="border:2px dashed #1565c0; padding:10px; min-height:40px; text-align:center; border-radius:8px;" ondragover="event.preventDefault()" ondrop="dropMatch(event, 'ج', 'drop4')">أسقط الرمز هنا</div>
+                            <p><b>الكمية:</b> السرعة النهائية</p>
+                            <div id="drop5" style="border:2px dashed #1565c0; padding:10px; min-height:40px; text-align:center; border-radius:8px;" ondragover="event.preventDefault()" ondrop="dropMatch(event, 'ع', 'drop5')">أسقط الرمز هنا</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:center; margin-top:20px;">
+                        <span draggable="true" ondragstart="dragSymbol(event, 'ز')" style="background:#1565c0; color:white; padding:8px 16px; border-radius:20px; cursor:grab; margin:4px;">ز</span>
+                        <span draggable="true" ondragstart="dragSymbol(event, 'ف')" style="background:#1565c0; color:white; padding:8px 16px; border-radius:20px; cursor:grab; margin:4px;">ف</span>
+                        <span draggable="true" ondragstart="dragSymbol(event, 'ع₀')" style="background:#1565c0; color:white; padding:8px 16px; border-radius:20px; cursor:grab; margin:4px;">ع₀</span>
+                        <span draggable="true" ondragstart="dragSymbol(event, 'ج')" style="background:#1565c0; color:white; padding:8px 16px; border-radius:20px; cursor:grab; margin:4px;">ج</span>
+                        <span draggable="true" ondragstart="dragSymbol(event, 'ع')" style="background:#1565c0; color:white; padding:8px 16px; border-radius:20px; cursor:grab; margin:4px;">ع</span>
+                    </div>
+                    <p id="matchFeedback" style="text-align:center; font-weight:bold; margin-top:15px;"></p>
+                </div>
+            `
+        },
+        {
+            title: "🧠 نشاط (2): اختر المعادلة المناسبة",
+            content: `
+                <div style="background:#fff3e0; padding:20px; border-radius:12px;">
+                    <h4 style="color:#e65100; text-align:center;">أمامك مسألة، اختر المعادلة الصحيحة لحلها</h4>
+                    <div id="equationChooser" style="text-align:center; margin-top:15px;">
+                        <p id="eqProblem"></p>
+                        <button onclick="checkEquation('eq1')" style="margin:5px; padding:10px; background:#e0e0e0; border:none; border-radius:8px; cursor:pointer;">ع = ع₀ + ج ز</button>
+                        <button onclick="checkEquation('eq2')" style="margin:5px; padding:10px; background:#e0e0e0; border:none; border-radius:8px; cursor:pointer;">ف = ع₀ ز + ½ ج ز²</button>
+                        <button onclick="checkEquation('eq3')" style="margin:5px; padding:10px; background:#e0e0e0; border:none; border-radius:8px; cursor:pointer;">ع² = ع₀² + 2 ج ف</button>
+                    </div>
+                    <p id="eqFeedback" style="text-align:center; font-weight:bold; margin-top:10px;"></p>
+                    <p id="eqScore" style="text-align:center; font-weight:bold;"></p>
+                </div>
+            `
+        },
+        {
+            title: "🏆 مسابقة الفريقين (4 أمثلة)",
+            content: `
+                <div style="background:#1e293b; color:white; padding:20px; border-radius:12px;">
+                    <h4 style="text-align:center;">⚔️ فريق الأحمر 🆚 فريق الأزرق</h4>
+                    <p style="text-align:center;">أجب عن الأسئلة بالتناوب. كل إجابة صحيحة = +1 نقطة، خطأ = 0</p>
+                    <div style="display:flex; gap:20px; justify-content:center; margin-bottom:20px;">
+                        <div style="background:#ef4444; padding:15px; border-radius:10px; text-align:center; min-width:120px;">
+                            <b>🔴 الأحمر</b><br>
+                            <span id="redScore" style="font-size:28px;">0</span>
+                        </div>
+                        <div style="background:#3b82f6; padding:15px; border-radius:10px; text-align:center; min-width:120px;">
+                            <b>🔵 الأزرق</b><br>
+                            <span id="blueScore" style="font-size:28px;">0</span>
+                        </div>
+                    </div>
+                    <p id="currentTeam" style="text-align:center; font-weight:bold;"></p>
+                    <p id="compQuestion" style="text-align:center; background:#fff; color:#000; padding:10px; border-radius:8px;"></p>
+                    <div id="compAnswers" style="text-align:center;"></div>
+                    <p id="compFeedback" style="text-align:center; font-weight:bold;"></p>
+                    <button onclick="startCompetition()" style="display:block; margin:10px auto; background:#10b981; color:white; border:none; padding:10px 25px; border-radius:8px; cursor:pointer; font-weight:bold;">▶️ بدء المسابقة</button>
+                    <button onclick="submitCompetition()" style="display:block; margin:5px auto; background:#f59e0b; color:white; border:none; padding:8px 20px; border-radius:8px; cursor:pointer;">📤 رفع النتيجة</button>
+                </div>
+            `
+        },
+        {
+            title: "🧮 مثال تطبيقي (نشاط 3 من الكتاب)",
+            content: `
+                <p><b>المسألة:</b> قبل الإقلاع تتحرك طائرة من السكون بعجلة منتظمة مسافة قدرها 100 متر في 20 ثانية. عين:</p>
+                <ol>
+                    <li>العجلة.</li>
+                    <li>السرعة عند الإقلاع.</li>
+                    <li>المسافة المقطوعة خلال الثانية الأولى.</li>
+                </ol>
+                <p><b>الحل:</b></p>
+                <p>أ- من المعادلة الثانية: ف = ع₀ ز + ½ ج ز²، حيث ع₀=0 ← 100 = ½ ج (400) ← ج = 0.5 م/ث².</p>
+                <p>ب- ع = ع₀ + ج ز = 0 + 0.5×20 = 10 م/ث.</p>
+                <p>ج- المسافة في الثانية الأولى: ف = 0 + ½×0.5×1² = 0.25 م.</p>
+            `
+        }
+    ],
+    islamicReflections: [
+        "📐 قال الله تعالى: ﴿وَكُلَّ شَيْءٍ عِندَهُ بِمِقْدَارٍ﴾ (الرعد: 8)",
+        "🚀 التأمل في دقة المعادلات يذكرنا بإتقان الخالق."
+    ],
+    questions: [
+        { id: "q10_1", text: "تستخدم معادلات الحركة فقط عندما تكون العجلة ثابتة.", type: "tf", correct: "true", explain: "✅ صحيح." },
+        { id: "q10_2", text: "الرمز (ز) يمثل المسافة المقطوعة.", type: "tf", correct: "false", explain: "❌ (ز) ترمز للزمن." },
+        { id: "q10_3", text: "من السكون تعني أن السرعة الابتدائية = صفر.", type: "tf", correct: "true", explain: "✅." },
+        { id: "q10_4", text: "المعادلة ع² = ع₀² + 2 ج ف تستخدم عندما لا نعرف الزمن.", type: "tf", correct: "true", explain: "✅." },
+        { id: "q10_5", text: "العجلة السالبة تعني أن السرعة تزداد.", type: "tf", correct: "false", explain: "❌ تعني تناقص السرعة." },
+        { id: "q10_6", text: "وحدة العجلة م/ث².", type: "tf", correct: "true", explain: "✅." },
+        { id: "q10_7", text: "لتحويل كم/س إلى م/ث نضرب في 3.6.", type: "tf", correct: "false", explain: "❌ نقسم على 3.6." },
+        { id: "q10_8", text: "ع = ع₀ + ج ز تستخدم لحساب المسافة.", type: "tf", correct: "false", explain: "❌ لحساب السرعة." },
+        { id: "q10_9", text: "المسافة في الثانية الأولى: ف = ع₀ + ½ ج.", type: "tf", correct: "true", explain: "✅ بتعويض ز=1." },
+        { id: "q10_10", text: "عند التوقف تكون السرعة النهائية صفراً.", type: "tf", correct: "true", explain: "✅." },
+        { id: "q10_11", text: "أي معادلة تستخدم إذا علمت ع₀, ج, ز وأردت ف:", type: "mc", options: ["ع = ع₀ + ج ز", "ف = ع₀ ز + ½ ج ز²", "ع² = ع₀² + 2 ج ف"], correct: "ف = ع₀ ز + ½ ج ز²", explain: "✅." },
+        { id: "q10_12", text: "جسم بدأ من السكون بعجلة 2 م/ث² لمدة 3 ثوانٍ. سرعته النهائية:", type: "mc", options: ["2", "6", "8"], correct: "6", explain: "✅ ع = 0 + 2×3." },
+        { id: "q10_13", text: "في السؤال السابق، المسافة المقطوعة:", type: "mc", options: ["9 م", "6 م", "18 م"], correct: "9 م", explain: "✅ ف = ½×2×9." },
+        { id: "q10_14", text: "سيارة تتباطأ من 20 إلى 10 م/ث في 5 ثوانٍ. عجلتها:", type: "mc", options: ["2", "-2", "10"], correct: "-2", explain: "✅." },
+        { id: "q10_15", text: "الرمز (ف) يرمز إلى:", type: "mc", options: ["الزمن", "السرعة", "المسافة"], correct: "المسافة", explain: "✅." },
+        { id: "q10_16", text: "العجلة صفر → السرعة:", type: "mc", options: ["تزداد", "تقل", "ثابتة"], correct: "ثابتة", explain: "✅." },
+        { id: "q10_17", text: "لإيجاد زمن التوقف نستخدم:", type: "mc", options: ["ف = ع₀ ز + ½ ج ز²", "ع = ع₀ + ج ز", "ع² = ع₀² + 2 ج ف"], correct: "ع = ع₀ + ج ز", explain: "✅ نعوض ع=0." },
+        { id: "q10_18", text: "طائرة 100م في 20ث من السكون. عجلتها:", type: "mc", options: ["0.25", "0.5", "1"], correct: "0.5", explain: "✅." },
+        { id: "q10_19", text: "السرعة الابتدائية يُرمز لها بـ:", type: "mc", options: ["ع", "ع₀", "ج"], correct: "ع₀", explain: "✅." },
+        { id: "q10_20", text: "في ع² = ع₀² + 2 ج ف، إذا ع₀=0:", type: "mc", options: ["ع = ج ف", "ع² = 2 ج ف", "ع = 2 ج ف"], correct: "ع² = 2 ج ف", explain: "✅." }
+    ]
+}
+]; // نهاية مصفوفة allLessons
+
+// ========== دوال التحقق من الدخول ==========
+function validateSuperAdmin(){
+    const pass = document.getElementById('superPassword').value.trim();
+    if(pass === 'Siaf2024@Physics'){
+        sessionStorage.setItem('role','super_admin');
+        startAdminSession('super_admin');
+    } else {
+        alert('❌ كلمة المرور غير صحيحة');
+    }
+}
+function validateStudent(){
+    const name = document.getElementById('studentName').value.trim();
+    const school = document.getElementById('studentSchool').value.trim();
+    const code = document.getElementById('studentCode').value.trim();
+    const lessonId = document.getElementById('selectedLessonId').value;
+    if(!name||!school||!code||!lessonId) return alert('أكمل جميع البيانات واختر درساً');
+
+    db.ref('generated_codes/'+code).once('value').then(snap=>{
+        const d = snap.val();
+        if(!d || !d.status) return alert('❌ الكود غير صحيح');
+
+        // إذا كان الكود نشطاً (يُستخدم لأول مرة)
+        if(d.status === 'active'){
+            db.ref('generated_codes/'+code).update({
+                status: 'used',
+                usedBy: name,
+                school: school
+            });
+            grantStudentAccess(name, school, code, lessonId);
+        }
+        // إذا كان الكود مستخدماً بالفعل ولكن لنفس الطالب
+        else if(d.status === 'used' && d.usedBy === name){
+            grantStudentAccess(name, school, code, lessonId);
+        }
+        // إذا كان الكود مستخدماً من طالب آخر
+        else {
+            alert('🔒 هذا الكود مستخدم بالفعل من قبل طالب آخر');
+        }
+    });
+}
+
+function grantStudentAccess(name, school, code, lessonId){
+    sessionStorage.setItem('role','student');
+    sessionStorage.setItem('studentName', name);
+    sessionStorage.setItem('studentSchool', school);
+    sessionStorage.setItem('studentCode', code);
+    sessionStorage.setItem('lessonId', lessonId);
+    startStudentSession();
+}
+function validateSchoolAdmin(){
+    const id = document.getElementById('schoolId').value.trim();
+    const pass = document.getElementById('schoolPassword').value.trim();
+    db.ref('schools/'+id).once('value').then(snap=>{
+        const s = snap.val();
+        if(s&&s.password===pass){
+            sessionStorage.setItem('role','school_admin');
+            sessionStorage.setItem('schoolId',id);
+            startAdminSession('school_admin');
+        } else alert('بيانات غير صحيحة');
+    });
+}
+function validateTeacher(){
+    const id = document.getElementById('teacherId').value.trim();
+    const pass = document.getElementById('teacherPassword').value.trim();
+    db.ref('teachers/'+id).once('value').then(snap=>{
+        const t = snap.val();
+        if(t&&t.password===pass){
+            sessionStorage.setItem('role','teacher');
+            sessionStorage.setItem('schoolId',t.schoolId);
+            startAdminSession('teacher');
+        } else alert('بيانات غير صحيحة');
+    });
+}
+
+function startStudentSession(){
+    document.querySelectorAll('.screen').forEach(s=>s.style.display='none');
+    document.getElementById('studentPlatform').style.display='block';
+    const lesson = allLessons.find(l=>l.id===sessionStorage.getItem('lessonId'));
+    document.getElementById('activeLessonBadge').textContent = lesson.title;
+    document.getElementById('welcomeUser').textContent = `👤 ${sessionStorage.getItem('studentName')} | 🏫 ${sessionStorage.getItem('studentSchool')}`;
+    renderLesson(lesson);
+    initWatermarks();
+}
+function startAdminSession(role){
+    document.querySelectorAll('.screen').forEach(s=>s.style.display='none');
+    document.getElementById('studentPlatform').style.display='none';
+    document.getElementById('superAdminPanel').style.display = role==='super_admin'?'block':'none';
+    document.getElementById('schoolAdminPanel').style.display = role==='school_admin'?'block':'none';
+    document.getElementById('teacherPanel').style.display = role==='teacher'?'block':'none';
+    if(role==='super_admin') loadSuperAdminData();
+    else if(role==='school_admin') loadSchoolAdminData();
+    else if(role==='teacher') loadTeacherData();
+}
+
+function renderLesson(lesson){
+    const map = document.getElementById('mapContainer');
+    map.innerHTML = '';
+    if(lesson.islamicReflections){
+        map.innerHTML += `<div style="background:#e8f5e9;border:2px solid #2e7d32;border-radius:12px;padding:15px;margin-bottom:20px;text-align:center"><h4>🕌 تأملات إيمانية</h4>${lesson.islamicReflections.map(r=>`<p>${r}</p>`).join('')}</div>`;
+    }
+    if(lesson.accordionData){
+        lesson.accordionData.forEach(item=>{
+            map.innerHTML += `<details><summary>📂 ${item.title}</summary><div>${item.content}</div></details>`;
+        });
+    }
+    const qc = document.getElementById('questionsContainer');
+    qc.innerHTML = '';
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('scoreDisplay').style.display = 'none';
+    document.getElementById('wrongAnswersSection').style.display = 'none';
+    document.getElementById('btnFinish').disabled = false;
+    if(lesson.questions){
+        lesson.questions.forEach((q,i)=>{
+            qc.innerHTML += `<div class="q-group" id="q-${q.id}"><p>${i+1}. ${q.text}</p>${q.options?q.options.map(o=>`<label class="option-lbl"><input type="radio" name="${q.id}" value="${o}"> ${o}</label>`).join(''):`<label class="option-lbl"><input type="radio" name="${q.id}" value="true"> ✅</label><label class="option-lbl"><input type="radio" name="${q.id}" value="false"> ❌</label>`}<div class="feedback-msg" id="fb-${q.id}"></div></div>`;
+        });
+        document.getElementById('questionsContainer').onchange = function(e){
+            if(e.target.matches('input[type="radio"]') && !document.getElementById('btnFinish').disabled){
+                const t = lesson.questions.length;
+                const a = document.querySelectorAll('#questionsContainer input:checked').length;
+                document.getElementById('progressFill').style.width = (t?Math.round(a/t*100):0)+'%';
+            }
+        };
+    }
+    if(lesson.id==='lesson_9_acceleration'){ setTimeout(()=>{accelLabReset();drawAccelCanvas();},500); }
+    if(lesson.id==='lesson_7_displacement'){ setTimeout(()=>{carX=160;carY=160;startX=160;startY=160;pathPoints=[{x:160,y:160}];drawSim();},300); }
+    if(lesson.id==='lesson_8_speed'){ setTimeout(()=>{speedLabResetAll();},300); }
+}
+
+function finishQuiz(){
+    const lesson = allLessons.find(l=>l.id===sessionStorage.getItem('lessonId'));
+    let score = 0;
+    lesson.questions.forEach(q=>{
+        const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+        const fb = document.getElementById(`fb-${q.id}`);
+        const g = document.getElementById(`q-${q.id}`);
+        if(sel && sel.value.trim()===q.correct.trim()){
+            score++;
+            g.classList.add('correct');
+            fb.className = 'feedback-msg show correct';
+            fb.textContent = '✅ صحيح';
+        } else {
+            g.classList.add('wrong');
+            fb.className = 'feedback-msg show wrong';
+            fb.textContent = '❌ خطأ. الصحيح: '+q.correct;
+        }
+    });
+    document.getElementById('scoreDisplay').style.display='block';
+    document.getElementById('scoreDisplay').textContent = `نتيجتك: ${score}/${lesson.questions.length}`;
+    document.getElementById('progressFill').style.width='100%';
+    document.getElementById('btnFinish').disabled=true;
+    db.ref('scores_'+lesson.id).push({
+        name: sessionStorage.getItem('studentName'),
+        school: sessionStorage.getItem('studentSchool'),
+        code: sessionStorage.getItem('studentCode'),
+        score: `${score}/${lesson.questions.length}`,
+        date: new Date().toISOString()
+    });
+}
+
+function switchTab(id){
+    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function logoutStudent(){ sessionStorage.clear(); location.reload(); }
+function logoutAdmin(){ sessionStorage.clear(); location.reload(); }
+
+// ========== لوحات التحكم ==========
+function loadSuperAdminData(){
+    db.ref('schools').on('value',snap=>{
+        const schools = snap.val()||{};
+        let h = '<table><tr><th>الرقم</th><th>الاسم</th></tr>';
+        Object.entries(schools).forEach(([id,s])=>{ h+=`<tr><td>${id}</td><td>${s.name}</td></tr>`; });
+        document.getElementById('schoolsTable').innerHTML = h+'</table>';
+        const sel = document.getElementById('codeSchoolSelect'); sel.innerHTML='';
+        Object.keys(schools).forEach(id=>{ sel.innerHTML+=`<option value="${id}">${schools[id].name}</option>`; });
+    });
+    db.ref('generated_codes').on('value',snap=>{
+        const codes = snap.val()||{};
+        let h = '<table><tr><th>الكود</th><th>الحالة</th><th>المدرسة</th><th>المستخدم</th></tr>';
+        Object.entries(codes).forEach(([c,d])=>{ h+=`<tr><td>${c}</td><td>${d.status}</td><td>${d.school||'-'}</td><td>${d.usedBy||'-'}</td></tr>`; });
+        document.getElementById('codesTable').innerHTML = h+'</table>';
+    });
+    db.ref().on('value',snap=>{
+        const data = snap.val()||{};
+        let all = [];
+        Object.keys(data).forEach(k=>{ if(k.startsWith('scores_')){ Object.values(data[k]).forEach(r=>all.push(r)); } });
+        let h = '<table><tr><th>الدرس</th><th>الطالب</th><th>المدرسة</th><th>النتيجة</th></tr>';
+        all.forEach(r=>{ h+=`<tr><td>${r.lesson||''}</td><td>${r.name}</td><td>${r.school}</td><td>${r.score}</td></tr>`; });
+        document.getElementById('allResultsTable').innerHTML = h+'</table>';
+    });
+}
+function createSchool(){
+    const id = document.getElementById('newSchoolId').value.trim();
+    const n = document.getElementById('newSchoolName').value.trim();
+    const p = document.getElementById('newSchoolPassword').value.trim();
+    if(!id||!n||!p) return alert('أكمل البيانات');
+    db.ref('schools/'+id).set({name:n,password:p});
+}
+function generateStudentCode(){
+    const school = document.getElementById('codeSchoolSelect').value;
+    const code = Math.random().toString(36).substring(2,10).toUpperCase();
+    db.ref('generated_codes/'+code).set({status:'active',school});
+    showToast(`تم إصدار: ${code}`);
+}
+function exportAllCSV(){
+    db.ref().once('value').then(snap=>{
+        const data = snap.val()||{};
+        let csv = 'الدرس,الطالب,المدرسة,النتيجة\n';
+        Object.keys(data).forEach(k=>{ if(k.startsWith('scores_')){ Object.values(data[k]).forEach(r=>{ csv+=`${r.lesson||''},${r.name},${r.school},${r.score}\n`; }); } });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv])); a.download = 'all_results.csv'; a.click();
+    });
+}
+function loadSchoolAdminData(){
+    const sid = sessionStorage.getItem('schoolId');
+    db.ref('teachers').orderByChild('schoolId').equalTo(sid).on('value',snap=>{
+        const teachers = snap.val()||{};
+        let h = '<table><tr><th>المعرف</th><th>الاسم</th></tr>';
+        Object.entries(teachers).forEach(([id,t])=>{ h+=`<tr><td>${id}</td><td>${t.name}</td></tr>`; });
+        document.getElementById('teachersTable').innerHTML = h+'</table>';
+    });
+    loadSchoolResults(sid,'schoolResultsTable');
+}
+function loadTeacherData(){
+    const sid = sessionStorage.getItem('schoolId');
+    loadSchoolResults(sid,'teacherResultsTable');
+}
+function loadSchoolResults(sid,tableId){
+    db.ref().on('value',snap=>{
+        const data = snap.val()||{};
+        let results = [];
+        Object.keys(data).forEach(k=>{ if(k.startsWith('scores_')){ Object.values(data[k]).forEach(r=>{ if(r.school===sid) results.push(r); }); } });
+        let h = '<table><tr><th>الطالب</th><th>النتيجة</th></tr>';
+        results.forEach(r=>{ h+=`<tr><td>${r.name}</td><td>${r.score}</td></tr>`; });
+        document.getElementById(tableId).innerHTML = h+'</table>';
+    });
+}
+function createTeacher(){
+    const id = document.getElementById('newTeacherId').value.trim();
+    const n = document.getElementById('newTeacherName').value.trim();
+    const p = document.getElementById('newTeacherPassword').value.trim();
+    if(!id||!n||!p) return alert('أكمل');
+    db.ref('teachers/'+id).set({name:n,password:p,schoolId:sessionStorage.getItem('schoolId')});
+}
+function printSchoolResults(){
+    const sid = sessionStorage.getItem('schoolId');
+    db.ref().once('value').then(snap=>{
+        const data = snap.val()||{};
+        let results = [];
+        Object.keys(data).forEach(k=>{ if(k.startsWith('scores_')){ Object.values(data[k]).forEach(r=>{ if(r.school===sid) results.push(r); }); } });
+        let pw = window.open('','','width=800,height=600');
+        pw.document.write('<html dir="rtl"><head><title>نتائج</title></head><body><h2>نتائج المدرسة</h2><table border="1"><tr><th>الطالب</th><th>النتيجة</th></tr>');
+        results.forEach(r=>pw.document.write(`<tr><td>${r.name}</td><td>${r.score}</td></tr>`));
+        pw.document.write('</table></body></html>');
+        pw.document.close(); pw.print();
+    });
+}
+
+// ========== مختبر القياس ==========
+let measObj=null,measTool=null,measValue=0;
+window.selectMeasObj = function(id,el){ measObj=id; document.querySelectorAll('.object-card').forEach(c=>c.style.border='2px solid #ccc'); el.style.border='2px solid #ff9800'; };
+window.selectMeasTool = function(tool){ measTool=tool; document.getElementById('measurementToolDisplay').innerHTML = tool==='ruler'?'<div style="position:relative;width:100%;height:60px;background:#f5f5dc;border:2px solid #333;border-radius:4px;"><div id="rulerSlider" style="position:absolute;top:0;width:4px;height:100%;background:red;left:50px;cursor:col-resize;border-radius:2px;"></div></div><div style="text-align:center;font-weight:bold;margin-top:5px;" id="rulerValue">0 مم</div>':tool==='caliper'?'<div style="position:relative;height:100px;background:#eee;border:1px solid #333;border-radius:4px;"><div style="position:absolute;left:40px;top:40px;width:10px;height:50px;background:#555;border-radius:2px;"></div><div id="caliperJaw" style="position:absolute;left:120px;top:40px;width:10px;height:50px;background:red;cursor:col-resize;border-radius:2px;"></div></div><div style="text-align:center;font-weight:bold;margin-top:5px;" id="caliperValue">0.0 مم</div>':'<div style="position:relative;width:80px;height:120px;background:#666;border-radius:10px;margin:0 auto;"><div id="micrometerThimble" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);width:50px;height:40px;background:red;border-radius:50%;cursor:ns-resize;"></div></div><div style="text-align:center;font-weight:bold;margin-top:5px;" id="micrometerValue">12.50 مم</div>'; };
+window.saveMeasRecord = function(){
+    if(!measObj||!measTool) return showToast('اختر جسماً وأداة');
+    const trueVals={1:50,2:20,3:12.5};
+    const tbody = document.getElementById('measurementTableBody');
+    if(tbody.innerHTML.includes('لا قياسات')) tbody.innerHTML='';
+    tbody.innerHTML += `<tr><td>${measTool}</td><td>جسم ${measObj}</td><td>${measValue.toFixed(2)} مم</td><td>${trueVals[measObj]} مم</td><td>${Math.abs(measValue-trueVals[measObj])<0.5?'✅':'❌'}</td></tr>`;
+};
+
+// ========== تصنيف الكميات ==========
+const quantities=[{name:"السرعة",type:"vector"},{name:"الكتلة",type:"scalar"},{name:"الإزاحة",type:"vector"},{name:"الزمن",type:"scalar"},{name:"القوة",type:"vector"},{name:"الحرارة",type:"scalar"},{name:"العجلة",type:"vector"},{name:"الطاقة",type:"scalar"},{name:"الوزن",type:"vector"},{name:"المسافة",type:"scalar"}];
+let qGameStarted=false,qGameTime=30,qGameScore=0,qGameTotal=0,qGameCurrent=null;
+function startQuantityGame(){ if(qGameStarted)return; qGameStarted=true;qGameScore=0;qGameTotal=0;qGameTime=30;document.getElementById('scalarItems').innerHTML='';document.getElementById('vectorItems').innerHTML='';document.getElementById('scoreDisplay').textContent='0/0';showNextQuantity();setInterval(()=>{qGameTime--;document.getElementById('timerDisplay').textContent='الوقت: '+qGameTime+' ثانية';if(qGameTime<=0){alert('انتهى الوقت! '+qGameScore+'/'+qGameTotal);qGameStarted=false;}},1000); }
+function showNextQuantity(){ if(qGameTotal>=quantities.length)return alert('انتهت الكميات!');qGameCurrent=quantities[qGameTotal];document.getElementById('quantityCard').textContent=qGameCurrent.name; }
+window.dragQuantity = function(e){ e.dataTransfer.setData("text",qGameCurrent.type); };
+window.dropQuantity = function(e,type){ e.preventDefault();if(!qGameCurrent||!qGameStarted)return;qGameTotal++;const correct=qGameCurrent.type===type;if(correct){qGameScore++;document.getElementById(type==='scalar'?'scalarItems':'vectorItems').innerHTML+=`<div style="background:#c8e6c9;padding:5px;margin:3px 0">✅ ${qGameCurrent.name}</div>`;}else{document.getElementById(type==='scalar'?'scalarItems':'vectorItems').innerHTML+=`<div style="background:#ffcdd2;padding:5px;margin:3px 0">❌ ${qGameCurrent.name}</div>`;}document.getElementById('scoreDisplay').textContent=qGameScore+'/'+qGameTotal;showNextQuantity();};
+function resetQuantityGame(){ qGameStarted=false;qGameTime=30;qGameScore=0;qGameTotal=0;document.getElementById('scalarItems').innerHTML='';document.getElementById('vectorItems').innerHTML='';document.getElementById('quantityCard').textContent='اسحبني';document.getElementById('scoreDisplay').textContent='0/0';document.getElementById('timerDisplay').textContent='الوقت: 30 ثانية'; };
+
+// ========== جدول التحويلات ==========
+function checkAllConversions(){
+    const convs=[{op:'conv1_op',val:'conv1_val',feed:'feed_conv1',cOp:'×',cVal:1000},{op:'conv2_op',val:'conv2_val',feed:'feed_conv2',cOp:'×',cVal:100},{op:'conv3_op',val:'conv3_val',feed:'feed_conv3',cOp:'×',cVal:60},{op:'conv4_op',val:'conv4_val',feed:'feed_conv4',cOp:'×',cVal:1000},{op:'conv5_op',val:'conv5_val',feed:'feed_conv5',cOp:'×',cVal:1000},{op:'conv6_op',val:'conv6_val',feed:'feed_conv6',cOp:'÷',cVal:1000}];
+    let score=0;
+    convs.forEach(c=>{const op=document.getElementById(c.op).value;const val=parseInt(document.getElementById(c.val).value);const fb=document.getElementById(c.feed);if(op===c.cOp&&val===c.cVal){score++;fb.style.color='#2e7d32';fb.textContent='✅';}else{fb.style.color='#c62828';fb.textContent=`❌ ${c.cOp} ${c.cVal}`;}});
+    document.getElementById('convScoreDisplay').textContent=`📊 ${score}/6`;
+}
+function resetConversions(){
+    for(let i=1;i<=6;i++){
+        const opEl=document.getElementById('conv'+i+'_op');
+        const valEl=document.getElementById('conv'+i+'_val');
+        const feedEl=document.getElementById('feed_conv'+i);
+        if(opEl) opEl.value='';
+        if(valEl) valEl.value='';
+        if(feedEl) feedEl.textContent='';
+    }
+    document.getElementById('convScoreDisplay').textContent='';
+}
+
+// ========== التحليل البعدي ==========
+let dimEquations=[{title:"السرعة = الإزاحة ÷ الزمن",left:"[ل][ز]⁻¹",right:"[ل][ز]⁻¹"},{title:"القوة = الكتلة × التسارع",left:"[ك][ل][ز]⁻²",right:"[ك][ل][ز]⁻²"},{title:"الشغل = القوة × الإزاحة",left:"[ك][ل]²[ز]⁻²",right:"[ك][ل]²[ز]⁻²"},{title:"السرعة = المسافة × الزمن (خاطئة)",left:"[ل][ز]⁻¹",right:"[ل][ز]"}];
+let dimIndex=0,dimAttempts=[];
+function checkDimensions(){const l=document.getElementById('dimLeft').value.trim();const r=document.getElementById('dimRight').value.trim();const fb=document.getElementById('dimFeedback');const eq=dimEquations[dimIndex];if(l===eq.left&&r===eq.right){fb.innerHTML='<span style="color:#2e7d32">✅ صحيح</span>';dimAttempts.push({eq:eq.title,l,r,status:'✅'});}else{fb.innerHTML=`<span style="color:#c62828">❌ الصحيح: ${eq.left} = ${eq.right}</span>`;dimAttempts.push({eq:eq.title,l,r,status:'❌'});}updateDimTable();}
+function nextDimensionEquation(){dimIndex++;if(dimIndex>=dimEquations.length){dimIndex=0;alert('اكتملت جميع المعادلات');}document.getElementById('dimEquationTitle').textContent='المعادلة '+(dimIndex+1)+': '+dimEquations[dimIndex].title;document.getElementById('dimLeft').value='';document.getElementById('dimRight').value='';document.getElementById('dimFeedback').innerHTML='';}
+function updateDimTable(){const tb=document.getElementById('dimTableBody');tb.innerHTML='';dimAttempts.forEach((a,i)=>{tb.innerHTML+=`<tr><td>${i+1}</td><td>${a.eq}</td><td>${a.l}</td><td>${a.r}</td><td style="color:${a.status==='✅'?'green':'red'}">${a.status}</td></tr>`;});if(!dimAttempts.length)tb.innerHTML='<tr><td colspan="5">لم تسجل محاولات بعد</td></tr>';}
+
+// ========== مختبر المتجهات ==========
+function checkRow1Lesson(){const val=document.getElementById('row1_R_lesson').value,feed=document.getElementById('feed_row1_lesson');if(val===""){feed.innerText="";return;}if(parseInt(val,10)===10){feed.style.color='#2e7d32';feed.innerText='✅ (5+5)';}else{feed.style.color='#c62828';feed.innerText='❌';}}
+function checkRow2Lesson(){const val=document.getElementById('row2_R_lesson').value,feed=document.getElementById('feed_row2_lesson');if(val===""){feed.innerText="";return;}if(parseInt(val,10)===10){feed.style.color='#2e7d32';feed.innerText='✅ (فيثاغورس)';}else{feed.style.color='#c62828';feed.innerText='❌';}}
+function checkRow3Lesson(){const val=document.getElementById('row3_R_lesson').value,feed=document.getElementById('feed_row3_lesson');if(val===""){feed.innerText="";return;}if(parseInt(val,10)===4){feed.style.color='#2e7d32';feed.innerText='✅ (10-6)';}else{feed.style.color='#c62828';feed.innerText='❌';}}
+function openFullscreenLesson(){const elem=document.getElementById("simContainerLesson");if(elem.requestFullscreen){elem.requestFullscreen();}else if(elem.webkitRequestFullscreen){elem.webkitRequestFullscreen();}}
+
+// ========== مختبر الإزاحة ==========
+let carX=160,carY=160,startX=160,startY=160,pathPoints=[{x:160,y:160}],dispAttempts=[];
+function drawSim(){const c=document.getElementById('simCanvas');if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,320,320);ctx.strokeStyle='#e5e7eb';for(let i=0;i<=320;i+=40){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,320);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(320,i);ctx.stroke();}ctx.strokeStyle='#1976d2';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(pathPoints[0].x,pathPoints[0].y);for(let i=1;i<pathPoints.length;i++)ctx.lineTo(pathPoints[i].x,pathPoints[i].y);ctx.stroke();ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(startX,startY);ctx.lineTo(carX,carY);ctx.strokeStyle='#2e7d32';ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#333';ctx.fillRect(startX-6,startY-6,12,12);ctx.fillStyle='#c62828';ctx.fillRect(carX-12,carY-12,24,24);}
+window.moveCar=function(dx,dy){carX+=dx;carY+=dy;carX=Math.max(0,Math.min(320,carX));carY=Math.max(0,Math.min(320,carY));pathPoints.push({x:carX,y:carY});drawSim();};
+window.checkDisplacement=function(){const distIn=parseFloat(document.getElementById('distIn').value),dispIn=parseFloat(document.getElementById('dispIn').value);let realDist=0;for(let i=1;i<pathPoints.length;i++){const dx=(pathPoints[i].x-pathPoints[i-1].x)/40,dy=(pathPoints[i].y-pathPoints[i-1].y)/40;realDist+=Math.sqrt(dx*dx+dy*dy);}const dx=(carX-startX)/40,dy=(carY-startY)/40,realDisp=Math.sqrt(dx*dx+dy*dy);window.lastRealDist=realDist;window.lastRealDisp=realDisp;const fb=document.getElementById('labFeedbackDisplacement');if(isNaN(distIn)||isNaN(dispIn)){fb.innerHTML='<span style="color:#c62828;">❌ أدخل قيماً!</span>';return;}if(Math.abs(distIn-realDist)<0.2&&Math.abs(dispIn-realDisp)<0.2)fb.innerHTML='<span style="color:#2e7d32;">✅ ممتاز!</span>';else fb.innerHTML=`<span style="color:#c62828;">❌ الصحيح: المسافة=${realDist.toFixed(1)}، الإزاحة=${realDisp.toFixed(1)}</span>`;};
+window.resetSim=function(){carX=160;carY=160;startX=160;startY=160;pathPoints=[{x:160,y:160}];document.getElementById('distIn').value='';document.getElementById('dispIn').value='';document.getElementById('labFeedbackDisplacement').innerHTML='';drawSim();};
+window.saveAttempt=function(){if(dispAttempts.length>=4){alert("⚠️ اكتملت المحاولات!");return;}const distIn=document.getElementById('distIn').value,dispIn=document.getElementById('dispIn').value;if(!distIn||!dispIn){alert("⚠️ أدخل القيم!");return;}const rd=window.lastRealDist||0,rp=window.lastRealDisp||0;const ok=Math.abs(parseFloat(distIn)-rd)<0.2&&Math.abs(parseFloat(dispIn)-rp)<0.2;dispAttempts.push({distIn,dispIn,realDist:rd.toFixed(1),realDisp:rp.toFixed(1),status:ok?'✅':'❌'});updateDispTable();resetSim();};
+function updateDispTable(){const tb=document.getElementById('attemptsBody');tb.innerHTML='';dispAttempts.forEach((a,i)=>{tb.innerHTML+=`<tr><td>${i+1}</td><td>${a.distIn}</td><td>${a.dispIn}</td><td>${a.realDist}</td><td>${a.realDisp}</td><td>${a.status}</td></tr>`;});if(dispAttempts.length===0)tb.innerHTML='<tr><td colspan="6">لم تسجل محاولات</td></tr>';}
+window.submitAttempts=function(){if(dispAttempts.length===0){alert("⚠️ لا توجد محاولات!");return;}const payload={name:sessionStorage.getItem('studentName')||'طالب',school:sessionStorage.getItem('studentSchool')||'',class:sessionStorage.getItem('studentClass')||'',lessonId:'lesson_7_displacement',lessonTitle:'الإزاحة',attempts:dispAttempts,date:new Date().toLocaleString('ar-YE')};db.ref('experiments_lesson_7_displacement').push(payload).then(()=>{alert("✅ تم رفع المحاولات!");dispAttempts=[];updateDispTable();}).catch(()=>alert("⚠️ فشل الرفع."));};
+
+// ========== مختبر السرعة ==========
+let speedLabSpeed=20,speedLabAttempts=[],speedLabActive=null,speedLabInterval=null,speedLabCtx;
+function speedLabInitCanvas(){const c=document.getElementById('speedLabCanvas');if(!c)return;speedLabCtx=c.getContext('2d');speedLabCtx.clearRect(0,0,650,200);speedLabCtx.strokeStyle='#e0e0e0';for(let i=0;i<=650;i+=50){speedLabCtx.beginPath();speedLabCtx.moveTo(i,0);speedLabCtx.lineTo(i,200);speedLabCtx.stroke();}speedLabCtx.fillStyle='#333';speedLabCtx.font='12px Arial';speedLabCtx.fillText('المسافة (م)',10,20);speedLabCtx.fillText('الزمن (ث)',600,190);}
+function speedLabChangeSpeed(d){speedLabSpeed=Math.max(5,Math.min(120,speedLabSpeed+d));document.getElementById('speedLabCurrentSpeed').textContent=speedLabSpeed;}
+function speedLabStartAttempt(){if(speedLabActive)return;speedLabInitCanvas();speedLabActive={speed:speedLabSpeed,start:Date.now()};document.getElementById('speedLabCar').style.left='0';speedLabCtx.beginPath();speedLabCtx.moveTo(0,200-(speedLabSpeed/2));speedLabCtx.strokeStyle='#ef4444';speedLabCtx.lineWidth=2;speedLabInterval=setInterval(()=>{if(!speedLabActive)return;const e=(Date.now()-speedLabActive.start)/1000;document.getElementById('speedLabCar').style.left=Math.min(e*20,600)+'px';const x=e*20,y=200-(speedLabActive.speed/2);if(x<=650){speedLabCtx.lineTo(x,y);speedLabCtx.stroke();}},50);}
+function speedLabEndAttempt(){if(!speedLabActive)return;clearInterval(speedLabInterval);const e=(Date.now()-speedLabActive.start)/1000;const d=speedLabActive.speed*e*1000/3600;speedLabAttempts.push({speed:speedLabActive.speed,time:e.toFixed(1),distance:d.toFixed(0)});speedLabActive=null;updateSpeedTable();}
+function updateSpeedTable(){const tb=document.getElementById('speedLabAttemptsBody');tb.innerHTML='';speedLabAttempts.forEach((a,i)=>{tb.innerHTML+=`<tr><td>${i+1}</td><td>${a.speed}</td><td>${a.time}</td><td>${a.distance}</td></tr>`;});if(!speedLabAttempts.length)tb.innerHTML='<tr><td colspan="4">لا محاولات</td></tr>';}
+function speedLabCalcAverage(){if(!speedLabAttempts.length)return;let td=0,tt=0;speedLabAttempts.forEach(a=>{td+=parseFloat(a.distance);tt+=parseFloat(a.time);});document.getElementById('speedLabAverageDisplay').textContent=`🚀 متوسط السرعة = ${(td/tt*3.6).toFixed(1)} كم/س`;}
+function speedLabResetAll(){if(speedLabActive){clearInterval(speedLabInterval);speedLabActive=null;}speedLabAttempts=[];updateSpeedTable();document.getElementById('speedLabCar').style.left='0';document.getElementById('speedLabAverageDisplay').textContent='';speedLabInitCanvas();}
+
+// ========== مختبر العجلة ==========
+let accelLabVel=0,accelLabTimeTotal=0,accelLabDist=0,accelLabAttemptsArr=[],accelLabLastA=null,accelLabType='positive',accelLabAnim=false;
+function accelLabSetType(t){accelLabType=t;document.getElementById('accelLabInput').value=t==='positive'?Math.floor(Math.random()*3)+2:t==='negative'?-(Math.floor(Math.random()*3)+2):0;}
+function accelLabRun(){
+    if(accelLabAnim||accelLabAttemptsArr.length>=3)return showToast('اكتملت 3 محاولات أو المختبر يعمل');
+    const a=parseFloat(document.getElementById('accelLabInput').value);
+    const dt=parseFloat(document.getElementById('accelLabTimeInput').value);
+    if(isNaN(a)||isNaN(dt)||dt<=0)return showToast('أدخل قيماً صحيحة');
+    accelLabLastA=a;accelLabAnim=true;
+    const startV=accelLabVel,endV=startV+a*dt;
+    const startT=performance.now();
+    const trackWidth = document.getElementById('accelLabCar').parentElement.clientWidth - 60;
+    const maxDist = 50; // أقصى إزاحة للعرض
+    function step(now){
+        const e=(now-startT)/1000;
+        if(e>=dt){
+            accelLabVel=endV;accelLabTimeTotal+=dt;accelLabDist+=(startV+endV)/2*dt;accelLabAnim=false;
+            document.getElementById('accelLabVel').textContent=accelLabVel.toFixed(1);
+            document.getElementById('accelLabTime').textContent=accelLabTimeTotal.toFixed(1);
+            document.getElementById('accelLabDist').textContent=accelLabDist.toFixed(1);
+            // تحديث موضع السيارة النهائي
+            const percent = accelLabDist / maxDist;
+            document.getElementById('accelLabCar').style.left = (20 + Math.min(percent,0.95)*trackWidth) + 'px';
+            drawAccelCanvas();
+            return;
+        }
+        const currentV = startV + a * e;
+        const currentDistInSeg = (startV + currentV) / 2 * e;
+        const totalDistNow = (accelLabDist - ((startV+endV)/2*dt)) + currentDistInSeg;
+        document.getElementById('accelLabVel').textContent = currentV.toFixed(1);
+        document.getElementById('accelLabTime').textContent = (accelLabTimeTotal + e).toFixed(1);
+        document.getElementById('accelLabDist').textContent = totalDistNow.toFixed(1);
+        const percent = totalDistNow / maxDist;
+        document.getElementById('accelLabCar').style.left = (20 + Math.min(percent,0.95)*trackWidth) + 'px';
+        requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+}
+function accelLabVerify(){
+    if(accelLabLastA===null)return showToast('شغّل مقطعاً أولاً');
+    const g=parseFloat(document.getElementById('accelLabGuess').value);
+    const fb=document.getElementById('accelLabFeedback');
+    if(isNaN(g)){fb.innerHTML='<span style="color:red">❌ أدخل رقماً</span>';return;}
+    if(Math.abs(g-accelLabLastA)<0.15){
+        fb.innerHTML='<span style="color:green">✅ صحيح!</span>';
+        accelLabAttemptsArr.push({type:accelLabType,accel:accelLabLastA,time:parseFloat(document.getElementById('accelLabTimeInput').value),finalVel:accelLabVel,dist:accelLabDist,guess:g,correct:true});
+        updateAccelTable();document.getElementById('accelLabGuess').value='';
+    }else{fb.innerHTML=`<span style="color:red">❌ الصحيح: ${accelLabLastA.toFixed(2)} م/ث²</span>`;}
+}
+function updateAccelTable(){const tb=document.getElementById('accelLabBody');tb.innerHTML='';accelLabAttemptsArr.forEach((a,i)=>{tb.innerHTML+=`<tr><td>${i+1}</td><td>${a.type==='positive'?'🚀':a.type==='negative'?'🛑':'➡️'}</td><td>${a.accel.toFixed(1)}</td><td>${a.time.toFixed(1)}</td><td>${a.finalVel.toFixed(1)}</td><td>${a.dist.toFixed(1)}</td><td>${a.guess.toFixed(1)}</td><td style="color:${a.correct?'green':'red'}">${a.correct?'✅':'❌'}</td></tr>`;});if(!accelLabAttemptsArr.length)tb.innerHTML='<tr><td colspan="8">لا محاولات</td></tr>';}
+function accelLabSubmit(){if(!accelLabAttemptsArr.length)return showToast('لا محاولات');db.ref('experiments_acceleration').push({name:sessionStorage.getItem('studentName'),school:sessionStorage.getItem('studentSchool'),attempts:accelLabAttemptsArr,date:new Date().toISOString()}).then(()=>showToast('✅ تم رفع المحاولات'));}
+function accelLabReset(){accelLabVel=0;accelLabTimeTotal=0;accelLabDist=0;accelLabAttemptsArr=[];accelLabLastA=null;accelLabAnim=false;document.getElementById('accelLabVel').textContent='0';document.getElementById('accelLabTime').textContent='0';document.getElementById('accelLabDist').textContent='0';document.getElementById('accelLabCar').style.left='20px';updateAccelTable();document.getElementById('accelLabFeedback').innerHTML='';document.getElementById('accelLabGuess').value='';drawAccelCanvas();}
+function drawAccelCanvas(){const c=document.getElementById('accelCanvas');if(!c)return;const ctx=c.getContext('2d');ctx.clearRect(0,0,700,180);ctx.strokeStyle='#e0e0e0';for(let i=0;i<=700;i+=70){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,180);ctx.stroke();}for(let i=0;i<=180;i+=40){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(700,i);ctx.stroke();}ctx.fillStyle='#333';ctx.font='12px Arial';ctx.fillText('السرعة (م/ث)',10,20);ctx.fillText('الزمن (ث)',660,170);}
+
+// ========== أمثلة العجلة التفاعلية ==========
+function ex1Check(){const v1=parseFloat(document.getElementById('ex1_v1').value),v2=parseFloat(document.getElementById('ex1_v2').value),fb=document.getElementById('ex1_fb');if(Math.abs(v1-10)<0.1&&Math.abs(v2-25)<0.1){fb.innerHTML='<span style="color:green">✅ صحيح! العجلة = (25-10)/20 = 0.75 م/ث² (موجبة)</span>';document.getElementById('ex2_card').style.display='block';}else{fb.innerHTML='<span style="color:red">❌ 36÷3.6=10 ، 90÷3.6=25</span>';}}
+function ex2Check(){const v1=parseFloat(document.getElementById('ex2_v1').value),fb=document.getElementById('ex2_fb');if(Math.abs(v1-30)<0.1){fb.innerHTML='<span style="color:green">✅ صحيح! العجلة = (0-30)/15 = -2 م/ث² (تباطؤ)</span>';}else{fb.innerHTML='<span style="color:red">❌ 108÷3.6=30</span>';}}
+
+// ========== علامات مائية ==========
+function initWatermarks(){
+    const layer=document.getElementById('watermarkLayer');
+    layer.innerHTML='';
+    const name=sessionStorage.getItem('studentName')||'طالب';
+    const code=sessionStorage.getItem('studentCode')||'';
+    for(let i=0;i<10;i++){
+        const el=document.createElement('div');
+        el.className='watermark-item';
+        el.innerHTML=`<span class="wm-name">👤 ${name}</span><span class="wm-info">🔑 ${code}</span><span class="wm-time">🕐 ${new Date().toLocaleString('ar-SA')}</span>`;
+        el.style.left=Math.random()*(window.innerWidth-200)+'px';
+        el.style.top=Math.random()*(window.innerHeight-100)+'px';
+        layer.appendChild(el);
+    }
+    setInterval(()=>{
+        document.querySelectorAll('.watermark-item .wm-time').forEach(el=>el.textContent='🕐 '+new Date().toLocaleString('ar-SA'));
+        document.querySelectorAll('.watermark-item').forEach(el=>{
+            el.style.left=Math.random()*(window.innerWidth-200)+'px';
+            el.style.top=Math.random()*(window.innerHeight-100)+'px';
+        });
+    },8000);
+}
+
+// ========== حماية ==========
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => { if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&e.key==='I')||(e.ctrlKey&&e.key==='u')||(e.ctrlKey&&e.key==='s')) e.preventDefault(); });
+
+
+// ========== دوال الدرس العاشر (مطابقة، اختيار معادلة، مسابقة) ==========
+let correctMatchesCount = 0;
+window.dragSymbol = function(e, sym){ e.dataTransfer.setData("text/plain", sym); };
+window.dropMatch = function(e, expected, dropId){
+    e.preventDefault();
+    const sym = e.dataTransfer.getData("text/plain");
+    const el = document.getElementById(dropId);
+    if(sym === expected){
+        el.style.background = '#c8e6c9';
+        el.innerHTML = '✅ ' + sym;
+        correctMatchesCount++;
+        if(correctMatchesCount >= 5){
+            document.getElementById('matchFeedback').innerHTML = '<span style="color:#2e7d32;">🎉 أحسنت! جميع المطابقات صحيحة</span>';
+        }
+    } else {
+        el.style.background = '#ffcdd2';
+        el.innerHTML = '❌ حاول مرة أخرى';
+    }
+};
+
+// نشاط 2: اختيار المعادلة
+let eqScore = 0, eqCurrent = 0;
+const eqProblems = [
+    {text:"سيارة تتحرك من السكون بعجلة 2 م/ث² خلال 5 ثوانٍ. احسب المسافة المقطوعة.", correct:"eq2"},
+    {text:"جسم سرعته 10 م/ث،تباطأ بتسارع -1 م/ث². احسب الزمن حتى التوقف.", correct:"eq1"},
+    {text:"سيارة تغيرت سرعتها من 20 إلى 30 م/ث بمسافة 100م. احسب العجلة.", correct:"eq3"}
+];
+function showNextEq(){
+    if(eqCurrent < eqProblems.length){
+        const el = document.getElementById('eqProblem');
+        if(el) el.innerText = eqProblems[eqCurrent].text;
+        const fb = document.getElementById('eqFeedback');
+        if(fb) fb.innerText = '';
+    } else {
+        const el = document.getElementById('eqProblem');
+        if(el) el.innerText = 'انتهت الأسئلة';
+        const fb = document.getElementById('eqFeedback');
+        if(fb) fb.innerText = 'نتيجتك: '+eqScore+'/'+eqProblems.length;
+    }
+}
+window.checkEquation = function(selected){
+    if(eqCurrent >= eqProblems.length) return;
+    const correct = eqProblems[eqCurrent].correct;
+    const fb = document.getElementById('eqFeedback');
+    if(selected === correct){
+        eqScore++;
+        if(fb) fb.innerHTML = '<span style="color:#2e7d32;">✅ صحيح!</span>';
+    } else {
+        if(fb) fb.innerHTML = '<span style="color:#c62828;">❌ خطأ. الصحيح: ' + correct;
+    }
+    const sc = document.getElementById('eqScore');
+    if(sc) sc.innerText = 'النقاط: '+eqScore;
+    eqCurrent++;
+    setTimeout(showNextEq, 1500);
+};
+
+// نشاط 3: مسابقة الفريقين
+let redScore = 0, blueScore = 0, currentTurn = 'red', compActive = false, compIndex = 0;
+const compQuestions = [
+    {text:"طائرة تتحرك من السكون بعجلة منتظمة مسافة 100م في 20ث. احسب العجلة.", answer:0.5},
+    {text:"سيارة سرعتها 36 كم/س، تسارعت إلى 90 كم/س في 20 ث. احسب العجلة (م/ث²).", answer:0.75},
+    {text:"جسم سرعته 10 م/ث، تحرك بعجلة 2 م/ث² لمدة 5 ثوانٍ. احسب المسافة.", answer:75},
+    {text:"قطار يتباطأ من 108 كم/س حتى التوقف في 15 ثانية. احسب العجلة.", answer:-2}
+];
+function startCompetition(){
+    compActive = true;
+    redScore = 0; blueScore = 0; currentTurn = 'red'; compIndex = 0;
+    document.getElementById('redScore').textContent = '0';
+    document.getElementById('blueScore').textContent = '0';
+    nextCompTurn();
+}
+function nextCompTurn(){
+    if(compIndex >= compQuestions.length){
+        compActive = false;
+        document.getElementById('compQuestion').textContent = 'انتهت المسابقة!';
+        document.getElementById('compFeedback').textContent = (redScore>blueScore?'🔴 الأحمر فاز!':blueScore>redScore?'🔵 الأزرق فاز!':'تعادل!');
+        return;
+    }
+    document.getElementById('currentTeam').textContent = 'دور: ' + (currentTurn==='red'?'🔴 الأحمر':'🔵 الأزرق');
+    document.getElementById('compQuestion').textContent = compQuestions[compIndex].text;
+    document.getElementById('compAnswers').innerHTML = `<input type="number" id="compAns" step="0.01" style="padding:8px; width:150px;"> <button onclick="submitCompAnswer()" style="padding:8px 15px; background:#0288d1; color:white; border:none; border-radius:6px;">إرسال</button>`;
+}
+window.submitCompAnswer = function(){
+    if(!compActive) return;
+    const ans = parseFloat(document.getElementById('compAns').value);
+    const correct = compQuestions[compIndex].answer;
+    const fb = document.getElementById('compFeedback');
+    if(Math.abs(ans - correct) < 0.1){
+        fb.innerHTML = '<span style="color:#10b981;">✅ إجابة صحيحة!</span>';
+        if(currentTurn === 'red') { redScore++; document.getElementById('redScore').textContent = redScore; }
+        else { blueScore++; document.getElementById('blueScore').textContent = blueScore; }
+    } else {
+        fb.innerHTML = `<span style="color:#ef4444;">❌ خطأ. الإجابة: ${correct}</span>`;
+    }
+    compIndex++;
+    currentTurn = currentTurn==='red'?'blue':'red';
+    setTimeout(nextCompTurn, 1500);
+};
+window.submitCompetition = function(){
+    const payload = {
+        name: sessionStorage.getItem('studentName')||'طالب',
+        school: sessionStorage.getItem('studentSchool')||'',
+        redScore, blueScore, winner: redScore>blueScore?'red':blueScore>redScore?'blue':'tie',
+        date: new Date().toISOString()
+    };
+    db.ref('competition_results').push(payload).then(()=>showToast('✅ تم رفع نتيجة المسابقة')).catch(()=>showToast('❌ فشل الرفع'));
+};// ========== بدء التشغيل ==========
+goBackToGate();
+</script>)
+</script>
+</body>
+</html>

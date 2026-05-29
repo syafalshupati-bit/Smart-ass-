@@ -719,6 +719,78 @@ export default function App() {
     return seedScores;
   });
 
+  // قائمة جميع المختبرات التفاعلية لمطابقتها في الحسابات التلقائية
+  const allInteractiveLabs = React.useMemo(() => [
+    { id: 'measurement', name: 'مختبر أجهزة القياس المعيارية والتفتيش ميكانيكياً', category: 'core' },
+    { id: 'quantity', name: 'تصنيف وتوصيف الكميات الفيزيائية عددياً واتجاهياً', category: 'core' },
+    { id: 'displacement', name: 'الحركة والإزاحة المعيارية بمركبة الاختبار التفاعلية', category: 'core' },
+    { id: 'projectile', name: 'حركة ومسار المقذوفات في بعدين وزاوية الإطلاق السريعة', category: 'core' },
+    { id: 'energy', name: 'طاقة السقوط الحر وحفظ الطاقة الميكانيكية بالكامل', category: 'core' },
+    { id: 'gravity', name: 'قانون الجذب الكوني المتبادل لنيوتن وتحسين الكتل', category: 'core' },
+    
+    // مختبرات الألعاب التفاعلية والدروس
+    { id: 'conversion', name: 'مختبر التحويلات والوحدات', category: 'game' },
+    { id: 'dimensional', name: 'مختبر تحليل الأبعاد', category: 'game' },
+    { id: 'vectors', name: 'مختبر تحليل وجمع المتجهات', category: 'game' },
+    { id: 'speed', name: 'مختبر رصد السرعة اللحظية والمتوسطة', category: 'game' },
+    { id: 'acceleration', name: 'مختبر التسارع والتباطؤ', category: 'game' },
+    { id: 'kinematics', name: 'مختبر معادلات الحركة المنتظمة', category: 'game' },
+    { id: 'freefall', name: 'مختبر السقوط الحر والجاذبية', category: 'game' },
+    { id: 'newton', name: 'مختبر قوانين حركة نيوتن والقوى', category: 'game' },
+    { id: 'friction', name: 'مختبر قوى الاحتكاك والانزلاق', category: 'game' },
+    { id: 'kinetic_molecular', name: 'مختبر النظرية الحركية للغازات والمادة', category: 'game' },
+    { id: 'hookes_law', name: 'مختبر قانون هوك والنابض المرن', category: 'game' },
+    { id: 'elasticity', name: 'مختبر ميكانيكا ونسب المرونة والأجسام', category: 'game' },
+    { id: 'capillary', name: 'مختبر الخاصية الشعرية والشد السطحي', category: 'game' },
+    { id: 'pressure', name: 'مختبر ضغط وميكانيكا الموائع', category: 'game' },
+    { id: 'buoyancy', name: 'مختبر قوة دفع أرخميدس والطفو للغواصات', category: 'game' }
+  ], []);
+
+  // قائمة المختبرات الستة المعمارية التي تعرض في شاشة المختبرات بقسم المحاكاة
+  const coreLabsList = React.useMemo(() => [
+    { id: 'measurement', name: 'أجهزة القياس المعيارية والتفتيش ميكانيكياً', component: <MeasurementLab /> },
+    { id: 'quantity', name: 'تصنيف وتوصيف الكميات الفيزيائية عددياً واتجاهياً', component: <QuantityClassifier /> },
+    { id: 'displacement', name: 'الحركة والإزاحة المعيارية بمركبة الاختبار التفاعلية', component: <DisplacementCarLab /> },
+    { id: 'projectile', name: 'حركة ومسار المقذوفات في بعدين وزاوية الإطلاق السريعة', component: <ProjectileLab /> },
+    { id: 'energy', name: 'طاقة السقوط الحر وحفظ الطاقة الميكانيكية بالكامل', component: <EnergyConservationLab /> },
+    { id: 'gravity', name: 'قانون الجذب الكوني المتبادل لنيوتن وتحسين الكتل', component: <GravityLawLab /> }
+  ], []);
+
+  // حساب الشعب التلقائية المتاحة للتسهيل والتعرف الذاتي
+  const allUniqueClasses = React.useMemo(() => {
+    const classes = new Set<string>();
+    // الشعب الافتراضية المبدئية
+    classes.add('الشعبة أ');
+    classes.add('الشعبة ب');
+    classes.add('الشعبة ج');
+    classes.add('الشعبة د');
+    classes.add('شعبة الدمج العام');
+    
+    // سحب الدفعات والشعب السابقة من كشف النتائج وحسابات الطلاب المفتوحة
+    if (scores && Array.isArray(scores)) {
+      scores.forEach(s => {
+        if (s.classGroup && s.classGroup.trim()) {
+          classes.add(s.classGroup.trim());
+        }
+      });
+    }
+    if (studentAccounts && Array.isArray(studentAccounts)) {
+      studentAccounts.forEach(acc => {
+        if (acc.classGroup && acc.classGroup.trim()) {
+          classes.add(acc.classGroup.trim());
+        }
+      });
+    }
+    if (studentAttendances && Array.isArray(studentAttendances)) {
+      studentAttendances.forEach(att => {
+        if (att.classGroup && att.classGroup.trim()) {
+          classes.add(att.classGroup.trim());
+        }
+      });
+    }
+    return Array.from(classes);
+  }, [scores, studentAccounts, studentAttendances]);
+
   const [hoveredOwnerMetric, setHoveredOwnerMetric] = useState<{
     school: string;
     label: string;
@@ -1118,6 +1190,11 @@ export default function App() {
     e.preventDefault();
     if (!studentName.trim()) {
       alert("⚠️ الرجاء إدخال اسمك الكريم كاملاً!");
+      return;
+    }
+
+    if (!studentClass || !studentClass.trim()) {
+      alert("⚠️ الرجاء كتابة وتحديد شعبتك الدراسية للدخول!");
       return;
     }
 
@@ -1848,13 +1925,13 @@ export default function App() {
                       onClick={() => { setActiveTab('lessons'); setSelectedLessonId(null); }}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'lessons' ? 'bg-amber-500 text-blue-950 shadow-md font-black' : 'text-slate-250 hover:bg-white/10'}`}
                     >
-                      📖 الدروس الـ١٨
+                      📖 الدروس ({lessonsList.length})
                     </button>
                     <button 
                       onClick={() => setActiveTab('labs')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${activeTab === 'labs' ? 'bg-amber-500 text-blue-950 shadow-md font-black' : 'text-slate-250 hover:bg-white/10'}`}
                     >
-                      🧪 المختبرات
+                      🧪 المختبرات ({coreLabsList.length})
                     </button>
                     <button 
                       onClick={() => { setActiveTab('adaptive_quiz'); generateAdaptiveQuiz(); }}
@@ -2034,13 +2111,13 @@ export default function App() {
                     onClick={() => { setActiveTab('lessons'); setSelectedLessonId(null); setMobileMenuOpen(false); }}
                     className={`text-right px-3 py-2 text-xs font-bold rounded-lg ${activeTab === 'lessons' ? 'bg-amber-500 text-blue-950 font-black' : 'hover:bg-white/5'}`}
                   >
-                    📖 الدروس المنهجية الـ١٨
+                    📖 الدروس المنهجية ({lessonsList.length})
                   </button>
                   <button 
                     onClick={() => { setActiveTab('labs'); setMobileMenuOpen(false); }}
                     className={`text-right px-3 py-2 text-xs font-bold rounded-lg ${activeTab === 'labs' ? 'bg-amber-500 text-blue-950 font-black' : 'hover:bg-white/5'}`}
                   >
-                    🧪 المختبرات التفاعلية الستة
+                    🧪 المختبرات ({coreLabsList.length})
                   </button>
                   <button 
                     onClick={() => { setActiveTab('adaptive_quiz'); generateAdaptiveQuiz(); setMobileMenuOpen(false); }}
@@ -2226,20 +2303,21 @@ export default function App() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-xs font-bold text-slate-700">🏫 الشعبة الدراسية:</label>
-                    <select
+                    <label className="block text-xs font-bold text-slate-700">🏫 الشعبة الدراسية (اكتب أو اختر):</label>
+                    <input
+                      type="text"
+                      list="school-classes-suggestions"
                       value={studentClass}
                       onChange={(e) => setStudentClass(e.target.value)}
                       required
-                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none rounded-xl p-3 text-xs text-slate-700"
-                    >
-                      <option value="">-- اختر الشعبة --</option>
-                      <option value="الشعبة أ">الشعبة أ</option>
-                      <option value="الشعبة ب">الشعبة ب</option>
-                      <option value="الشعبة ج">الشعبة ج</option>
-                      <option value="الشعبة د">الشعبة د</option>
-                      <option value="شعبة الدمج العام">شعبة الدمج العام</option>
-                    </select>
+                      placeholder="اكتب اسم شعبتك الدراسية (مثال: الشعبة أ)"
+                      className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 outline-none rounded-xl p-3 text-xs text-slate-700 font-medium placeholder:text-slate-400"
+                    />
+                    <datalist id="school-classes-suggestions">
+                      {allUniqueClasses.map(cls => (
+                        <option key={cls} value={cls} />
+                      ))}
+                    </datalist>
                   </div>
 
                   <div className="space-y-1">
@@ -2480,13 +2558,15 @@ export default function App() {
                           )}
                         </div>
                         <div className="flex gap-4">
-                          <div className="p-4 bg-white/10 rounded-2xl text-center border border-white/10 min-w-[100px]">
-                            <span className="block text-xl font-bold text-yellow-300">١٨</span>
-                            <span className="text-[10px] text-slate-300 font-bold">درساً معتمداً</span>
+                          <div className="p-4 bg-white/10 backdrop-blur-sm rounded-2xl text-center border border-white/15 min-w-[110px] flex flex-col items-center justify-center transition-all hover:scale-105 hover:bg-white/15 duration-300 shadow-md">
+                            <BookOpen size={20} className="text-yellow-300 mb-1" />
+                            <span className="block text-xl md:text-2xl font-black text-yellow-300">{lessonsList.length}</span>
+                            <span className="text-[10px] text-slate-200 font-bold">درساً معتمداً</span>
                           </div>
-                          <div className="p-4 bg-white/10 rounded-2xl text-center border border-white/10 min-w-[100px]">
-                            <span className="block text-xl font-bold text-teal-300">٦</span>
-                            <span className="text-[10px] text-slate-300 font-bold">مختبرات تفاعلية</span>
+                          <div className="p-4 bg-white/10 backdrop-blur-sm rounded-2xl text-center border border-white/15 min-w-[110px] flex flex-col items-center justify-center transition-all hover:scale-105 hover:bg-white/15 duration-300 shadow-md">
+                            <Beaker size={20} className="text-teal-300 mb-1" />
+                            <span className="block text-xl md:text-2xl font-black text-teal-300">{allInteractiveLabs.length}</span>
+                            <span className="text-[10px] text-slate-200 font-bold">مختبرات تفاعلية</span>
                           </div>
                         </div>
                       </div>
@@ -3020,23 +3100,11 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-                  {/* ١. أجهزة القياس */}
-                  <MeasurementLab />
-
-                  {/* ٢. تصنيف الكميات */}
-                  <QuantityClassifier />
-
-                  {/* ٣. الحركة والإزاحة */}
-                  <DisplacementCarLab />
-
-                  {/* ٤. حركة المقذوفات */}
-                  <ProjectileLab />
-
-                  {/* ٥. طاقة السقوط وحفظ الطاقة */}
-                  <EnergyConservationLab />
-
-                  {/* ٦. الجذب الكوني لنيوتن */}
-                  <GravityLawLab />
+                  {coreLabsList.map((lab) => (
+                    <React.Fragment key={lab.id}>
+                      {lab.component}
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
             )}
@@ -3165,7 +3233,7 @@ export default function App() {
                       </div>
                       <div>
                         <h2 className="text-base font-black text-slate-900">🧠 اختبار الرصد والمواءمة التكيفي</h2>
-                        <p className="text-xs text-slate-500">يقيس محرك التكيف مستواك العلمي من الـ 18 درساً، وينتج لك اختباراً مخصصاً لرفع مستواك تلقائياً!</p>
+                        <p className="text-xs text-slate-500">يقيس محرك التكيف مستواك العلمي من الـ {lessonsList.length} درساً، وينتج لك اختباراً مخصصاً لرفع مستواك تلقائياً!</p>
                       </div>
                     </div>
 
@@ -3840,13 +3908,13 @@ export default function App() {
 
               // Homework Alert (if low progress)
               const studentAttempted = Array.from(new Set(studentScoresList.map(s => s.lessonId))).length;
-              const studentCompletionRate = Math.min(100, Math.round((studentAttempted / 18) * 100));
+              const studentCompletionRate = Math.min(100, Math.round((studentAttempted / lessonsList.length) * 100));
               if (studentCompletionRate < 35) {
                 calculatedAlerts.push({
                   id: "dyn_hw",
                   type: "warning",
                   title: "تأخر ملحوظ في تسليمات التمارين والواجبات المنهجية 📚",
-                  message: `رصد آلي: إنجازك للمنهج الحالي منخفض للغاية (${studentCompletionRate}%). يجب عليك إكمال اختبارات الدروس الـ 18 لدعم سجل تقدمك الدراسي.`,
+                  message: `رصد آلي: إنجازك للمنهج الحالي منخفض للغاية (${studentCompletionRate}%). يجب عليك إكمال اختبارات الدروس الـ ${lessonsList.length} لدعم سجل تقدمك الدراسي.`,
                   date: "اليوم",
                   alertType: "homework"
                 });
@@ -4076,7 +4144,7 @@ export default function App() {
                       const interactionRate = Math.min(100, Math.round((usedCodes / capacity) * 100));
                       
                       const uniqueLessonsAttempted = Array.from(new Set(schoolScores.map(s => s.lessonId))).length;
-                      const curriculumCompletionRate = Math.round((uniqueLessonsAttempted / 18) * 100);
+                      const curriculumCompletionRate = Math.round((uniqueLessonsAttempted / lessonsList.length) * 100);
 
                       return {
                         ...sch,
@@ -4205,7 +4273,7 @@ export default function App() {
                                             setHoveredOwnerMetric({
                                               school: sch.name,
                                               label: "نسبة إكمال المنهج",
-                                              value: `${sch.curriculumCompletionRate}% (أكمل ${Array.from(new Set(scores.filter(s => s.school === sch.name).map(s => s.lessonId))).length} من 18 درس)`,
+                                              value: `${sch.curriculumCompletionRate}% (أكمل ${Array.from(new Set(scores.filter(s => s.school === sch.name).map(s => s.lessonId))).length} من ${lessonsList.length} درس)`,
                                               x: rect.left - (parentRect?.left || 0) + rect.width / 2,
                                               y: rect.top - (parentRect?.top || 0) - 45
                                             });
@@ -5615,7 +5683,7 @@ export default function App() {
                 const avgOutOf5 = stdScores.length > 0 ? Number(((totalGot / totalMax) * 5).toFixed(1)) : 0;
                 const avgPct = stdScores.length > 0 ? Math.round((totalGot / totalMax) * 100) : 0;
                 const attemptedCount = Array.from(new Set(stdScores.map(s => s.lessonId))).length;
-                const completionRate = Math.min(100, Math.round((attemptedCount / 18) * 105));
+                const completionRate = Math.min(100, Math.round((attemptedCount / lessonsList.length) * 105));
 
                 return {
                   name,
@@ -6538,7 +6606,7 @@ export default function App() {
                   const avgPct = stdScores.length > 0 ? Math.round((totalGot / totalMax) * 100) : 0;
                   
                   const attemptedCount = Array.from(new Set(stdScores.map(s => s.lessonId))).length;
-                  const completionRate = Math.round((attemptedCount / 18) * 105);
+                  const completionRate = Math.round((attemptedCount / lessonsList.length) * 105);
                   const safeCompletionRate = Math.min(100, completionRate);
 
                   return {
@@ -6808,7 +6876,7 @@ export default function App() {
                          const avgPct = stdScores.length > 0 ? Math.round((totalGot / totalMax) * 100) : 0;
                          
                          const attemptedCount = Array.from(new Set(stdScores.map(s => s.lessonId))).length;
-                         const completionRate = Math.round((attemptedCount / 18) * 105);
+                         const completionRate = Math.round((attemptedCount / lessonsList.length) * 105);
                          const safeCompletionRate = Math.min(100, completionRate);
 
                          return {
@@ -7107,7 +7175,7 @@ export default function App() {
                                        <td className="p-2 border border-slate-900 font-bold">{std.name}</td>
                                        <td className="p-2 border border-slate-900 text-center font-mono">{std.code}</td>
                                        <td className="p-2 border border-slate-900 text-center">{std.classGroup}</td>
-                                       <td className="p-2 border border-slate-900 text-center font-mono">{std.testCount} / 18</td>
+                                       <td className="p-2 border border-slate-900 text-center font-mono">{std.testCount} / {lessonsList.length}</td>
                                        <td className="p-2 border border-slate-900 text-center font-mono font-bold">{std.avgOutOf5} / 5</td>
                                        <td className="p-2 border border-slate-900 text-center font-mono font-bold">{std.avgPct}%</td>
                                        <td className="p-2 border border-slate-900 text-center font-bold">
